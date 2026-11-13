@@ -15,10 +15,12 @@ a quote can be checked after the fact.
 
 | Piece | State |
 | --- | --- |
+| Live demo | https://radiri.vercel.app |
 | Live quoting (1Click + Rhea), comparison, matrix, opportunities | Working, no keys needed |
 | AI analyst | Working with `NEARAI_API_KEY`, otherwise reports the missing key |
-| Snapshot contract | Built and tested, not deployed yet, so the snapshot panel reports that instead of showing rows |
-| Monitor script | Working, needs a deployed contract and a reporter function-call key |
+| Snapshot contract | Deployed on testnet at `radiri.testnet`, 10 snapshot rows written by the monitor |
+| Monitor script | Working, writes batches with a reporter key limited to `record_snapshots` |
+| MCP endpoint | `POST /api/mcp`, exposes `compare_routes`, `liquidity_matrix`, `list_stablecoins` |
 
 No mock data anywhere. Every number on screen comes from a live source, and every failure
 is shown with its verbatim reason.
@@ -174,6 +176,22 @@ pnpm monitor   # needs NEXT_PUBLIC_CONTRACT_ID, RADIRI_REPORTER_ACCOUNT, RADIRI_
 It quotes the configured pairs, batches `record_snapshots` calls, and prints the transaction
 hash and explorer link for each. With any of those variables missing it exits with the list
 of what is missing and submits nothing.
+
+Current deployment: contract `radiri.testnet`, reporter `radiri-reporter.testnet` signing with
+a function-call key capped at 1 NEAR and restricted to `record_snapshots`.
+
+## Agent access over MCP
+
+`POST /api/mcp` is a JSON-RPC 2.0 MCP endpoint over the same engine the UI uses. Tools:
+`compare_routes`, `liquidity_matrix`, `list_stablecoins`.
+
+```sh
+curl -s https://radiri.vercel.app/api/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"compare_routes",
+       "arguments":{"from":{"symbol":"USDC","chain":"near"},
+                    "to":{"symbol":"USDT","chain":"near"},"amount":10000}}}'
+```
 
 ## Environment
 
