@@ -19,28 +19,23 @@ export default function LandingPage() {
       <section className="lp-hero" id="top">
         <div className="lp-hero-inner">
           <div className="lp-hero-copy">
-            <p className="lp-eyebrow lp-rise">Stablecoin liquidity across chains, settled on NEAR</p>
+            <p className="lp-eyebrow lp-rise">Settlement on NEAR, liquidity across chains</p>
             <h1 className="lp-rise d1">
-              One click from the
+              Compare stablecoin
               <br />
-              best stablecoin route.
+              routes across chains.
             </h1>
             <p className="lp-sub lp-rise d2">
               Enter a pair and a size. Radiri quotes NEAR Intents across chains and Rhea on NEAR,
-              prices both in basis points, and names the route that actually has liquidity. If a
-              source runs dry at your size, you see the reason it gave.
+              prices both in basis points, and shows which one fills. Execution stays in your own
+              wallet, and a route that has no liquidity at your size says so.
             </p>
             <div className="lp-actions lp-rise d3">
               <Link className="lp-btn lp-btn--ink" href="/dashboard">
                 Quote your size
               </Link>
-              <a
-                className="lp-btn lp-btn--outline"
-                href="https://github.com/fozagtx/Radiri/tree/main/contract"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Read the contract
+              <a className="lp-btn lp-btn--outline" href="#how">
+                See how it works
               </a>
             </div>
           </div>

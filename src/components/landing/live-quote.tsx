@@ -8,13 +8,18 @@ import { formatBps, formatEta, formatToken } from "@/components/radiri/format";
 
 const FROM = { symbol: "USDC", chain: "near" };
 const TO = { symbol: "USDT", chain: "near" };
-const AMOUNT = 100_000;
+const AMOUNT = 10_000;
 const ORDER: RouteSource[] = ["near-intents", "rhea"];
 
 const META: Record<RouteSource, { label: string; kind: string; dot: string }> = {
   "near-intents": { label: "NEAR Intents", kind: "1Click, cross-chain", dot: "lp-dot--intents" },
   rhea: { label: "Rhea", kind: "NEAR pools", dot: "lp-dot--rhea" },
 };
+
+const amountFormat = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 export function LiveQuote() {
   const [data, setData] = useState<CompareResponse | null>(null);
@@ -65,7 +70,7 @@ export function LiveQuote() {
 
             {route ? (
               <div className="lp-source-figure lp-good">
-                {formatToken(route.amountOut)}
+                {amountFormat.format(route.amountOut)}
                 <small>{route.to.symbol} out</small>
               </div>
             ) : failure ? (

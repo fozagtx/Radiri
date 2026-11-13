@@ -10,7 +10,6 @@ import { RadiriMark } from "@/components/landing/mark";
 const LINKS: { label: string; href: string; external?: boolean }[] = [
   { label: "How it works", href: "/#how" },
   { label: "FAQs", href: "/#faq" },
-  { label: "Contract", href: "https://github.com/fozagtx/Radiri/tree/main/contract", external: true },
 ];
 
 const HAIR = "currentColor";
