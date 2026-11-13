@@ -19,16 +19,16 @@ export default function LandingPage() {
       <section className="lp-hero" id="top">
         <div className="lp-hero-inner">
           <div className="lp-hero-copy">
-            <p className="lp-eyebrow lp-rise">Stablecoin liquidity aggregator on NEAR</p>
+            <p className="lp-eyebrow lp-rise">Stablecoin liquidity across chains, settled on NEAR</p>
             <h1 className="lp-rise d1">
-              Compare stablecoin
+              One click from the
               <br />
-              routes on NEAR.
+              best stablecoin route.
             </h1>
             <p className="lp-sub lp-rise d2">
-              Radiri quotes NEAR Intents and Rhea for the same pair and size, prices both in basis
-              points, and shows which source has liquidity. When a route is empty at your size, you
-              see the reason it gave.
+              Enter a pair and a size. Radiri quotes NEAR Intents across chains and Rhea on NEAR,
+              prices both in basis points, and names the route that actually has liquidity. If a
+              source runs dry at your size, you see the reason it gave.
             </p>
             <div className="lp-actions lp-rise d3">
               <Link className="lp-btn lp-btn--ink" href="/dashboard">
