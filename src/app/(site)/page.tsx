@@ -12,18 +12,14 @@ export default function LandingPage() {
       <RevealObserver />
       <NotchNavbar />
 
-      <div className="lp-bg" aria-hidden>
-        <AuroraHero className="lp-bg-aurora" showTitle={false} />
-      </div>
-
-      <section className="lp-hero" id="top">
+      <AuroraHero className="lp-hero" id="top">
         <div className="lp-hero-inner">
           <div className="lp-hero-copy">
             <p className="lp-eyebrow lp-rise">Settlement on NEAR, liquidity across chains</p>
             <h1 className="lp-rise d1">
-              Compare stablecoin
+              Every stablecoin route,
               <br />
-              routes across chains.
+              in one place.
             </h1>
             <p className="lp-sub lp-rise d2">
               Enter a pair and a size. Radiri quotes NEAR Intents across chains and Rhea on NEAR,
@@ -42,7 +38,7 @@ export default function LandingPage() {
 
           <LiveQuote />
         </div>
-      </section>
+      </AuroraHero>
 
       <div className="lp-venues">
         <p>Sources and rails</p>

@@ -124,6 +124,7 @@ export async function quoteOneClick({
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "User-Agent": "Radiri/0.1 (+https://radiri.vercel.app)",
         ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
       },
       body: JSON.stringify(body),
@@ -134,6 +135,14 @@ export async function quoteOneClick({
   }
 
   const raw = await res.text();
+  if (raw.trimStart().startsWith("<")) {
+    return failure(
+      from,
+      to,
+      `1Click answered with an HTML page instead of a quote (HTTP ${res.status}), usually a Cloudflare challenge on this network`,
+      "error",
+    );
+  }
   if (!res.ok) {
     let reason = raw.trim() || `HTTP ${res.status}`;
     try {

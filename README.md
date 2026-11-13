@@ -16,7 +16,7 @@ a quote can be checked after the fact.
 | Piece | State |
 | --- | --- |
 | Live demo | https://radiri.vercel.app |
-| Live quoting (1Click + Rhea), comparison, matrix, opportunities | Working, no keys needed |
+| Live quoting (1Click + Rhea), aggregation, matrix, opportunities | Working, no keys needed |
 | AI analyst | Working with `NEARAI_API_KEY`, otherwise reports the missing key |
 | Snapshot contract | Deployed on testnet at `radiri.testnet`, 10 snapshot rows written by the monitor |
 | Monitor script | Working, writes batches with a reporter key limited to `record_snapshots` |
@@ -43,8 +43,8 @@ is shown with its verbatim reason.
 ## The problem
 
 Stablecoin treasury movement is priced by feel. Two sources for the same pair can differ by
-tens of basis points, and some routes quietly stop quoting above a certain size. An operator
-comparing a 10,000 and a 100,000 transfer has no single place showing the cost, the worst
+tens of basis points, and some routes quietly stop quoting above a certain size. A team
+moving a 10,000 or a 100,000 transfer has no single place showing the cost, the worst
 case at the quoted slippage, and which source actually has liquidity at that size.
 
 ## What it does
@@ -58,7 +58,7 @@ case at the quoted slippage, and which source actually has liquidity at that siz
   stable pair is cheaper from another chain) and `source-divergence` (the two sources
   disagree on the same pair).
 - Sweeps a 32-cell matrix of stablecoin pairs at the chosen size in one request.
-- Sends the comparison to a NEAR AI Cloud model for a plain-language read, including the TEE
+- Sends the quote set to a NEAR AI Cloud model for a plain-language read, including the TEE
   signature endpoint when the reply is signed.
 - Records snapshots on a NEAR contract through a reporter account, so history is on chain.
 
@@ -149,10 +149,9 @@ scripts/monitor.ts -> record_snapshots -> contract/ (reporter function-call key)
 | `contract/` | Rust registry contract, near-sdk 5.30.1. See [`contract/README.md`](./contract/README.md). |
 | `src/app/api/` | Route handlers listed above, all request-time dynamic. |
 | `src/lib/radiri/` | Catalog cache, adapters, engine, opportunity derivation, analyst, shared types (`types.ts` is the API/UI contract). |
-| `src/components/radiri/` | Dashboard: route form, gap hero, route cards, comparison table, matrix, opportunities, analyst, snapshot history. |
+| `src/components/radiri/` | Dashboard: route form, gap hero, route cards, source table, matrix, opportunities, analyst, snapshot history. |
 | `src/components/wallet-provider.tsx` | NEAR wallet connection via `@hot-labs/near-connect`. |
 | `scripts/monitor.ts` | Quotes a fixed set of pairs, then records them on the contract. |
-| `docs/` | Architecture and handoff notes. |
 
 ## Contract
 

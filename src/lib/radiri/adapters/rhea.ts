@@ -59,7 +59,10 @@ export async function quoteRhea({ from, to, amount, slippageBps }: RheaQuotePara
   try {
     res = await fetch(url, {
       cache: "no-store",
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Radiri/0.1 (+https://radiri.vercel.app)",
+      },
       signal: AbortSignal.timeout(QUOTE_TIMEOUT_MS),
     });
   } catch (error) {
@@ -67,6 +70,14 @@ export async function quoteRhea({ from, to, amount, slippageBps }: RheaQuotePara
   }
 
   const raw = await res.text();
+  if (raw.trimStart().startsWith("<")) {
+    return failure(
+      from,
+      to,
+      `Rhea answered with an HTML page instead of a quote (HTTP ${res.status}), usually a Cloudflare challenge on this network`,
+      "error",
+    );
+  }
   if (!res.ok) {
     return failure(from, to, raw.trim().slice(0, 300) || `HTTP ${res.status}`, classify(raw));
   }

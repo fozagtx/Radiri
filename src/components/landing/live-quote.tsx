@@ -95,7 +95,7 @@ export function LiveQuote() {
       <div className="lp-sheet-foot">
         <span>{error ? "quote failed" : data ? "live dry-run quote" : "reading both sources"}</span>
         <Link href="/dashboard" style={{ color: "var(--ink-2)", textDecoration: "underline" }}>
-          full comparison
+          full view
         </Link>
       </div>
     </div>

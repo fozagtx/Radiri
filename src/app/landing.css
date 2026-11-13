@@ -39,34 +39,18 @@
   isolation: isolate;
 }
 
-/* full-page aurora backdrop */
-.lp-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-}
-
-.lp .lp-bg .aurora-hero-wrapper {
-  width: 100%;
-  height: 100%;
-  min-height: 100vh;
-}
-
-.lp .lp-bg-aurora {
+/* hero: the aurora-hero component, kept to its own styling */
+.lp .lp-hero {
   --stripe-color: #fbfaf5;
-  --bg-filter: blur(30px) opacity(42%) saturate(150%);
+  --bg-filter: blur(16px) opacity(26%) saturate(135%);
   background-color: var(--paper);
+  border-bottom: 1px solid var(--hair-soft);
+  min-height: 640px;
 }
 
-.lp .lp-bg .aurora-hero-bg {
-  mask-image: radial-gradient(ellipse at 72% 2%, black 32%, transparent 78%);
-  -webkit-mask-image: radial-gradient(ellipse at 72% 2%, black 32%, transparent 78%);
-}
-
-.lp .lp-bg .aurora-hero-bg::after {
-  opacity: 0.3;
-  mix-blend-mode: multiply;
+.lp .lp-hero .aurora-hero-bg {
+  mask-image: radial-gradient(ellipse at 78% 0%, black 32%, transparent 74%);
+  -webkit-mask-image: radial-gradient(ellipse at 78% 0%, black 32%, transparent 74%);
 }
 
 .lp *,
@@ -88,13 +72,7 @@
 
 /* hero */
 .lp-hero {
-  border-bottom: 1px solid var(--hair-soft);
   background: transparent;
-}
-
-.lp-hero-aurora {
-  border-bottom: 1px solid var(--hair-soft);
-  max-height: none;
 }
 .lp-btn {
   font-family: inherit;

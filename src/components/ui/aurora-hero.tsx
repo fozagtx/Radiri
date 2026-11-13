@@ -4,21 +4,20 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 export interface AuroraHeroProps extends React.HTMLAttributes<HTMLElement> {
-  /** Optional title rendered with the glass displacement effect. */
+  /** The main title text to display with the glass displacement effect. */
   title?: string;
-  /** Set false to use the component purely as a background. */
+  /** Whether to render the glass title. False uses this purely as a background. */
   showTitle?: boolean;
   children?: React.ReactNode;
 }
 
 export function AuroraHero({
-  title = "",
+  title = "An awesome title",
   showTitle = false,
   children,
   className,
   ...props
 }: AuroraHeroProps) {
-
   // Safely URL-encoded SVG string for the fluted glass effect
   const filterImageHref = "data:image/svg+xml," + encodeURIComponent(`
     <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' color-interpolation-filters='sRGB'>
@@ -47,7 +46,7 @@ export function AuroraHero({
 
   return (
     <section
-      className={cn("aurora-hero-wrapper w-full relative overflow-hidden", className)}
+      className={cn("aurora-hero-wrapper relative w-full overflow-hidden", className)}
       {...props}
     >
       <style>{`
@@ -71,19 +70,19 @@ export function AuroraHero({
           position: absolute;
           inset: 0;
           --stripes: repeating-linear-gradient(
-            100deg, 
-            var(--stripe-color) 0%, 
-            var(--stripe-color) 7%, 
-            transparent 10%, 
-            transparent 12%, 
+            100deg,
+            var(--stripe-color) 0%,
+            var(--stripe-color) 7%,
+            transparent 10%,
+            transparent 12%,
             var(--stripe-color) 16%
           );
           --rainbow: repeating-linear-gradient(
-            100deg, 
-            #60a5fa 10%, 
-            #e879f9 15%, 
-            #60a5fa 20%, 
-            #5eead4 25%, 
+            100deg,
+            #60a5fa 10%,
+            #e879f9 15%,
+            #60a5fa 20%,
+            #5eead4 25%,
             #60a5fa 30%
           );
           background-image: var(--stripes), var(--rainbow);

@@ -147,7 +147,7 @@ export function RadiriDashboard() {
           </Panel>
 
           <Panel
-            title="Source comparison"
+            title="Sources"
             description="Every source on the same input, cost normalised to basis points."
           >
             <ComparisonTable routes={routes} failures={failures} best={best} loading={loading} />
