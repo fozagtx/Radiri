@@ -22,9 +22,7 @@ export default function LandingPage() {
               in one place.
             </h1>
             <p className="lp-sub lp-rise d2">
-              Enter a pair and a size. Radiri quotes NEAR Intents across chains and Rhea on NEAR,
-              prices both in basis points, and shows which one fills. Execution stays in your own
-              wallet, and a route that has no liquidity at your size says so.
+              Quotes from NEAR Intents and Rhea, priced in basis points for your size.
             </p>
             <div className="lp-actions lp-rise d3">
               <Link className="lp-btn lp-btn--ink" href="/dashboard">

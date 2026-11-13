@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils";
 import { useWallet } from "@/components/wallet-provider";
 import { RadiriMark } from "@/components/landing/mark";
 
-const LINKS: { label: string; href: string; external?: boolean }[] = [
+export type NavItem = { label: string; href: string; external?: boolean };
+
+const DEFAULT_LINKS: NavItem[] = [
   { label: "How it works", href: "/#how" },
   { label: "FAQs", href: "/#faq" },
 ];
@@ -49,7 +51,11 @@ function WalletAction({ block = false }: { block?: boolean }) {
   );
 }
 
-export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
+export function NotchNavbar({
+  className,
+  links = DEFAULT_LINKS,
+  ...props
+}: React.HTMLAttributes<HTMLElement> & { links?: NavItem[] }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -89,7 +95,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
                 </Link>
 
                 <nav className="hidden items-center gap-6 md:flex">
-                  {LINKS.map((item) =>
+                  {links.map((item) =>
                     item.external ? (
                       <a
                         key={item.label}
@@ -153,7 +159,7 @@ export function NotchNavbar({ className, ...props }: React.HTMLAttributes<HTMLEl
       {open ? (
         <div className="fixed inset-x-0 top-14 z-40 border-b border-foreground/8 bg-background p-3 shadow-sm md:hidden">
           <nav className="flex flex-col">
-            {LINKS.map((item) =>
+            {links.map((item) =>
               item.external ? (
                 <a
                   key={item.label}

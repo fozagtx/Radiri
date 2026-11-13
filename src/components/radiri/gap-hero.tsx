@@ -70,7 +70,7 @@ export function GapHero({
           <span className="text-[0.7rem] font-medium tracking-wide text-muted-foreground uppercase">
             Same pair, two sources
           </span>
-          <h2 className="text-base leading-snug font-semibold text-balance">
+          <h2 className="font-display text-xl leading-tight text-balance">
             {loading && !compare ? <Skeleton className="h-5 w-96 max-w-full" /> : headline(compare, gap, best)}
           </h2>
         </div>

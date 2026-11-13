@@ -1,52 +1,32 @@
-import Link from "next/link";
-import { ExternalLink } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { RadiriDashboard } from "@/components/radiri/radiri-dashboard";
-import { INTENTS_URL } from "@/components/radiri/format";
-import { RadiriMark } from "@/components/landing/mark";
-import { WalletStatus } from "@/components/radiri/wallet-status";
-import { NETWORK } from "@/lib/config";
+import { NotchNavbar } from "@/components/ui/notch-navbar";
+
+const LINKS = [
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "How it works", href: "/#how" },
+  { label: "FAQs", href: "/#faq" },
+];
 
 export default function DashboardPage() {
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3 px-4 py-2.5">
-          <Link href="/" className="flex items-center gap-2 text-foreground no-underline">
-            <RadiriMark size={20} />
-            <div className="flex flex-col leading-tight">
-              <h1 className="text-sm font-semibold tracking-tight">Radiri</h1>
-              <span className="text-[0.7rem] text-muted-foreground">Stablecoin liquidity aggregator</span>
-            </div>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="font-mono text-[0.65rem] uppercase">
-              {NETWORK}
-            </Badge>
-            <a
-              href={INTENTS_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="hidden items-center gap-1 text-xs text-muted-foreground underline underline-offset-3 hover:text-foreground sm:inline-flex"
-            >
-              intents.near.org
-              <ExternalLink className="size-3" aria-hidden />
-            </a>
-            <WalletStatus />
-          </div>
-        </div>
-      </header>
+      <NotchNavbar links={LINKS} />
 
-      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-3">
+      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 pt-20 pb-6">
+        <div className="mb-3">
+          <h1 className="font-display text-2xl leading-tight">Stablecoin routes</h1>
+          <p className="text-xs text-muted-foreground">
+            NEAR Intents and Rhea, quoted at your size. Every quote is a dry run.
+          </p>
+        </div>
+
         <RadiriDashboard />
       </main>
 
       <footer className="border-t">
         <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-1 px-4 py-3 text-[0.7rem] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            Radiri quotes 1Click and Rhea in dry run mode. Execution happens in your own wallet at intents.near.org.
-          </span>
-          <span>Snapshots are written by the monitor to the registry contract on NEAR.</span>
+          <span>Quotes from live sources, never cached screenshots.</span>
+          <span>Snapshots are written by the monitor to radiri.testnet.</span>
         </div>
       </footer>
     </div>
