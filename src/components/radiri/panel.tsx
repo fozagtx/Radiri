@@ -20,7 +20,7 @@ export function Panel({
     <Card size="sm" className={cn("gap-3", className)}>
       <CardHeader className="grid-cols-[1fr_auto] items-center gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <CardTitle className="font-display text-[17px]">{title}</CardTitle>
+          <CardTitle className="text-[13.5px] font-semibold tracking-tight">{title}</CardTitle>
           {description ? <CardDescription className="text-xs">{description}</CardDescription> : null}
         </div>
         {action ? <div className="justify-self-end">{action}</div> : null}
