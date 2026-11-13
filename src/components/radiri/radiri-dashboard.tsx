@@ -154,6 +154,7 @@ export function RadiriDashboard() {
           </Panel>
 
           <Panel
+            id="matrix"
             title="Liquidity matrix"
             description="Quote every stablecoin pair at this size and look for gaps."
           >
@@ -163,6 +164,7 @@ export function RadiriDashboard() {
 
         <div className="flex flex-col gap-3">
           <Panel
+            id="opportunities"
             title="Opportunities"
             description={
               current ? `Flagged for this quote, generated ${formatIso(current.generatedAt)}` : "Flagged for this quote."
@@ -178,6 +180,7 @@ export function RadiriDashboard() {
       </div>
 
       <Panel
+        id="snapshots"
         title="On chain snapshots"
         description="Rows the monitor wrote to the Radiri registry contract, newest first."
       >

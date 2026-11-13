@@ -8,6 +8,7 @@ export function Panel({
   children,
   className,
   contentClassName,
+  id,
 }: {
   title: string;
   description?: string;
@@ -15,9 +16,10 @@ export function Panel({
   children: React.ReactNode;
   className?: string;
   contentClassName?: string;
+  id?: string;
 }) {
   return (
-    <Card size="sm" className={cn("gap-3", className)}>
+    <Card size="sm" id={id} className={cn("scroll-mt-20 gap-3", className)}>
       <CardHeader className="grid-cols-[1fr_auto] items-center gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
           <CardTitle className="text-[13.5px] font-semibold tracking-tight">{title}</CardTitle>

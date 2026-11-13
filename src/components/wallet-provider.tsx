@@ -1,72 +1,75 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import type { NearConnector as NearConnectorType } from "@hot-labs/near-connect";
-import { NETWORK } from "@/lib/config";
-
-type FunctionCall = { methodName: string; args: object; gas: string; deposit: string };
+import type { WalletSelector } from "@near-wallet-selector/core";
+import type { WalletSelectorModal } from "@near-wallet-selector/modal-ui";
+import { CONTRACT_ID, NETWORK } from "@/lib/config";
 
 type WalletCtx = {
   accountId: string | null;
   ready: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
-  callMethod: (contractId: string, call: FunctionCall) => Promise<unknown>;
 };
 
 const Ctx = createContext<WalletCtx | null>(null);
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const connectorRef = useRef<NearConnectorType | null>(null);
+  const selectorRef = useRef<WalletSelector | null>(null);
+  const modalRef = useRef<WalletSelectorModal | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
-      // Imported lazily: the connector touches window/iframes and must not run during SSR.
-      const { NearConnector } = await import("@hot-labs/near-connect");
-      const connector = new NearConnector({ network: NETWORK });
-      connectorRef.current = connector;
+      // Loaded lazily: the selector touches window and must not run during SSR.
+      const [{ setupWalletSelector }, { setupMyNearWallet }, { setupModal }] = await Promise.all([
+        import("@near-wallet-selector/core"),
+        import("@near-wallet-selector/my-near-wallet"),
+        import("@near-wallet-selector/modal-ui"),
+      ]);
+      await import("@near-wallet-selector/modal-ui/styles.css");
 
-      connector.on("wallet:signIn", (e) => setAccountId(e.accounts[0]?.accountId ?? null));
-      connector.on("wallet:signOut", () => setAccountId(null));
+      const selector = await setupWalletSelector({
+        network: NETWORK,
+        modules: [setupMyNearWallet()],
+      });
+      if (cancelled) return;
 
-      try {
-        const { accounts } = await connector.getConnectedWallet();
-        if (!cancelled) setAccountId(accounts[0]?.accountId ?? null);
-      } catch {
-        // No wallet connected yet.
-      }
+      selectorRef.current = selector;
+      modalRef.current = setupModal(selector, {
+        contractId: CONTRACT_ID || "radiri.testnet",
+        description: "Read-only route quotes. Radiri never signs a transaction.",
+      });
+
+      const sync = () => setAccountId(selector.store.getState().accounts[0]?.accountId ?? null);
+
+      sync();
+      selector.on("signedIn", sync);
+      selector.on("signedOut", sync);
+      selector.on("accountsChanged", sync);
+      selector.store.observable.subscribe(sync);
       if (!cancelled) setReady(true);
     })();
+
     return () => {
       cancelled = true;
     };
   }, []);
 
   const signIn = useCallback(async () => {
-    await connectorRef.current?.connect();
+    modalRef.current?.show();
   }, []);
 
   const signOut = useCallback(async () => {
-    await connectorRef.current?.disconnect();
+    const wallet = await selectorRef.current?.wallet();
+    await wallet?.signOut();
     setAccountId(null);
   }, []);
 
-  const callMethod = useCallback(async (contractId: string, call: FunctionCall) => {
-    const connector = connectorRef.current;
-    if (!connector) throw new Error("Wallet not ready");
-    const wallet = await connector.wallet();
-    return wallet.signAndSendTransaction({
-      receiverId: contractId,
-      actions: [{ type: "FunctionCall", params: call }],
-    });
-  }, []);
-
-  return (
-    <Ctx.Provider value={{ accountId, ready, signIn, signOut, callMethod }}>{children}</Ctx.Provider>
-  );
+  return <Ctx.Provider value={{ accountId, ready, signIn, signOut }}>{children}</Ctx.Provider>;
 }
 
 export function useWallet() {
