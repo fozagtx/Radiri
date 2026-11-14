@@ -1,0 +1,29 @@
+import { connection } from "next/server";
+import { LENDING_CONTRACT_ID } from "@/lib/config";
+import { getLendingAssets, getLendingConfig } from "@/lib/near/lending-views";
+
+/**
+ * GET /api/lending/markets
+ *   on-chain:   { mode: "near", contractId, config, assets: AssetView[] }  (server-side RPC, uncached)
+ *   simulation: { mode: "simulation", contractId: null }  (the browser runs the labelled simulation)
+ */
+export async function GET() {
+  await connection();
+
+  if (!LENDING_CONTRACT_ID) {
+    return Response.json({ mode: "simulation", contractId: null });
+  }
+
+  try {
+    const [config, assets] = await Promise.all([getLendingConfig(LENDING_CONTRACT_ID), getLendingAssets(LENDING_CONTRACT_ID)]);
+    return Response.json(
+      { mode: "near", contractId: LENDING_CONTRACT_ID, config, assets },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    return Response.json(
+      { error: `Lending contract ${LENDING_CONTRACT_ID} could not be read: ${error instanceof Error ? error.message : String(error)}` },
+      { status: 502 },
+    );
+  }
+}

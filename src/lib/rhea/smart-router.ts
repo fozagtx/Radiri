@@ -1,5 +1,7 @@
-import { fromBaseUnits, toBaseUnits } from "../catalog";
-import type { RouteFailure, RouteQuote, StableAsset } from "../types";
+import { fromBaseUnits, toBaseUnits } from "@/lib/radiri/catalog";
+import type { RouteFailure, RouteQuote, StableAsset } from "@/lib/radiri/types";
+
+/** RHEA Smart Router (smartx.rhea.finance): NEAR-chain swap quotes for the stablecoin route monitor. */
 
 const RHEA_ROUTER = "https://smartx.rhea.finance/swapMultiDexPath";
 const RHEA_CHAIN = "near";

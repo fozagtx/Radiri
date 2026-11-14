@@ -1,65 +1,21 @@
+import { classifyToken, isDeprecatedToken, type OneClickTokenRow } from "@/config/assets";
+import { fromBaseUnits as exactFromBaseUnits, toBaseUnits as exactToBaseUnits } from "@/lib/intents/amounts";
+import { getOneClickTokens } from "@/lib/intents/tokens";
+import { numberToDecimalString } from "@/lib/oracle/wad";
 import type { Chain, StableAsset } from "./types";
 
-const ONECLICK_API = "https://1click.chaindefuser.com/v0";
-const CACHE_TTL_MS = 5 * 60_000;
-const TOKEN_TIMEOUT_MS = 15_000;
-
 /**
- * Symbols treated as stablecoins. Rows are never synthesized: every returned
- * asset is a live row from 1Click `/tokens` that matches this set.
+ * Stablecoin view of the live 1Click catalog for the route monitor (/routes, /api/stables, MCP).
+ * Rows come from the shared, cached `/v0/tokens` fetch in src/lib/intents and are filtered to the
+ * "stable" category of src/config/assets. Rows are never synthesized.
  */
-const STABLE_SYMBOLS = new Set([
-  "USDC",
-  "USDT",
-  "DAI",
-  "USDS",
-  "SUSDS",
-  "USDE",
-  "SUSDE",
-  "USD1",
-  "USDG",
-  "PYUSD",
-  "FRAX",
-  "TUSD",
-  "USDD",
-  "RLUSD",
-  "EURC",
-  "GHO",
-  "LUSD",
-  "CRVUSD",
-  "FDUSD",
-  "USDP",
-  "USDBC",
-  "USDT0",
-  "SDAI",
-  "ALUSD",
-  "MIM",
-  "DOLA",
-  "USDY",
-  "USD0",
-]);
-
-/** Raw row from `GET /v0/tokens`. */
-interface OneClickToken {
-  assetId: string;
-  decimals: number;
-  blockchain: Chain;
-  symbol: string;
-  price?: number | null;
-  priceUpdatedAt?: string;
-  contractAddress?: string | null;
-  coingeckoId?: string | null;
-}
 
 export interface CatalogSnapshot {
   assets: StableAsset[];
   fetchedAt: string;
 }
 
-let cache: { at: number; snapshot: CatalogSnapshot } | null = null;
-let inflight: Promise<CatalogSnapshot> | null = null;
-
-function toStableAsset(token: OneClickToken): StableAsset {
+function toStableAsset(token: OneClickTokenRow): StableAsset {
   return {
     assetId: token.assetId,
     symbol: token.symbol,
@@ -70,12 +26,13 @@ function toStableAsset(token: OneClickToken): StableAsset {
   };
 }
 
-function isStable(token: OneClickToken): boolean {
+function isStable(token: OneClickTokenRow): boolean {
   return (
     typeof token.assetId === "string" &&
     typeof token.symbol === "string" &&
-    STABLE_SYMBOLS.has(token.symbol.toUpperCase()) &&
-    Number.isInteger(token.decimals)
+    Number.isInteger(token.decimals) &&
+    !isDeprecatedToken(token) &&
+    classifyToken(token) === "stable"
   );
 }
 
@@ -83,37 +40,10 @@ function compareAssets(a: StableAsset, b: StableAsset): number {
   return a.symbol.localeCompare(b.symbol) || a.chain.localeCompare(b.chain) || a.assetId.localeCompare(b.assetId);
 }
 
-async function fetchTokens(): Promise<OneClickToken[]> {
-  const res = await fetch(`${ONECLICK_API}/tokens`, {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(TOKEN_TIMEOUT_MS),
-  });
-  if (!res.ok) {
-    throw new Error(`1Click /tokens failed with HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  }
-  const payload: unknown = await res.json();
-  if (!Array.isArray(payload)) throw new Error("1Click /tokens returned an unexpected payload (expected an array)");
-  return payload as OneClickToken[];
-}
-
-/** Live stablecoin catalog, cached in-process for `CACHE_TTL_MS`. */
+/** Live stablecoin catalog (the underlying token list is cached in-process for 60 s). */
 export async function getCatalog(force = false): Promise<CatalogSnapshot> {
-  if (!force && cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.snapshot;
-  if (inflight) return inflight;
-  const pending = (async () => {
-    try {
-      const tokens = await fetchTokens();
-      const assets = tokens.filter(isStable).map(toStableAsset).sort(compareAssets);
-      const snapshot: CatalogSnapshot = { assets, fetchedAt: new Date().toISOString() };
-      cache = { at: Date.now(), snapshot };
-      return snapshot;
-    } finally {
-      inflight = null;
-    }
-  })();
-  inflight = pending;
-  return pending;
+  const { tokens, fetchedAt } = await getOneClickTokens(force);
+  return { assets: tokens.filter(isStable).map(toStableAsset).sort(compareAssets), fetchedAt };
 }
 
 export async function getStableAssets(): Promise<StableAsset[]> {
@@ -133,21 +63,22 @@ export function assetLabel(asset: Pick<StableAsset, "symbol" | "chain">): string
   return `${asset.symbol}:${asset.chain}`;
 }
 
-/** Human units -> integer string in the token's smallest unit. */
+/**
+ * Human units (a JS number from the compare API) -> integer string in the token's smallest unit.
+ * Exact: the number's shortest decimal form is converted with string math; digits beyond the
+ * token's decimals are truncated.
+ */
 export function toBaseUnits(human: number, decimals: number): string {
   if (!Number.isFinite(human) || human <= 0) throw new Error(`Invalid amount: ${human}`);
-  const [whole, fraction = ""] = human.toFixed(Math.min(decimals, 18)).split(".");
-  const padded = fraction.padEnd(decimals, "0").slice(0, decimals);
-  return (BigInt(whole) * BigInt(10) ** BigInt(decimals) + BigInt(padded || "0")).toString();
+  const decimal = numberToDecimalString(human);
+  const [whole, fraction = ""] = decimal.split(".");
+  const trimmed = fraction.slice(0, decimals);
+  const base = exactToBaseUnits(trimmed ? `${whole}.${trimmed}` : whole, decimals);
+  if (BigInt(base) <= BigInt(0)) throw new Error(`Invalid amount: ${human} is below one base unit`);
+  return base;
 }
 
-/** Integer string in the token's smallest unit -> human units. */
+/** Integer string in the token's smallest unit -> human units (display number for the route monitor). */
 export function fromBaseUnits(base: string | bigint, decimals: number): number {
-  const raw = base.toString().trim();
-  if (!/^-?\d+$/.test(raw)) throw new Error(`Invalid base-unit amount: ${base}`);
-  const negative = raw.startsWith("-");
-  const digits = (negative ? raw.slice(1) : raw).padStart(decimals + 1, "0");
-  const cut = digits.length - decimals;
-  const human = Number(`${digits.slice(0, cut)}.${digits.slice(cut)}`);
-  return negative ? -human : human;
+  return Number(exactFromBaseUnits(base, decimals));
 }

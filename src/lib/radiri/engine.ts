@@ -1,5 +1,5 @@
+import { quoteRhea } from "@/lib/rhea/smart-router";
 import { quoteOneClick } from "./adapters/oneclick";
-import { quoteRhea } from "./adapters/rhea";
 import { assetLabel, findAsset, getStableAssets } from "./catalog";
 import { deriveMatrixOpportunities, deriveOpportunities, pairKey } from "./opportunities";
 import type {
