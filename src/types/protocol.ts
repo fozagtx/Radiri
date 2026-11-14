@@ -146,7 +146,8 @@ export interface LendingConfigView {
 /* Lending client (src/lib/lending)                                    */
 /* ------------------------------------------------------------------ */
 
-export type LendingMode = "near" | "simulation";
+/** Lending always runs against the NEAR testnet contract. */
+export type LendingMode = "near";
 
 export type LendingAction =
   | { kind: "deposit_collateral"; tokenId: string; amount: U128 }
@@ -158,7 +159,7 @@ export type LendingAction =
 
 export interface LendingActionResult {
   mode: LendingMode;
-  /** NEAR transaction hashes for mode "near"; empty for simulation. */
+  /** NEAR transaction hashes. */
   txHashes: string[];
   /** Explorer links for mode "near". */
   explorerUrls: string[];
@@ -166,7 +167,7 @@ export interface LendingActionResult {
 
 export interface LendingClient {
   readonly mode: LendingMode;
-  /** Contract account id, or null in simulation. */
+  /** Contract account id. */
   readonly contractId: string | null;
   getConfig(): Promise<LendingConfigView>;
   getAssets(): Promise<AssetView[]>;
@@ -285,6 +286,6 @@ export interface ActivityItem {
   detail: string;
   timestamp: string;
   status: "pending" | "success" | "failed" | "refunded";
-  source: "lending-contract" | "simulation" | "1click";
+  source: "lending-contract" | "1click";
   explorerUrl: string | null;
 }

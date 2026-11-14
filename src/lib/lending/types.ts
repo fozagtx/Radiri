@@ -1,4 +1,4 @@
-import type { LendingAction, LendingActionResult, LendingClient, PriceObservation } from "@/types/protocol";
+import type { LendingAction, LendingActionResult, LendingClient } from "@/types/protocol";
 import type { BlockReason } from "@/lib/risk";
 
 /** Signs and sends NEAR transactions through the connected wallet (NEAR Connect). */
@@ -6,19 +6,10 @@ export interface NearTransactionSigner {
   signAndSendTransactions(transactions: { receiverId: string; actions: unknown[] }[]): Promise<unknown[]>;
 }
 
-/** Where the test token prices of a simulation come from. */
-export interface PriceFeedStatus {
-  source: "/api/pricing";
-  fetchedAtMs: number | null;
-  error: string | null;
-  observations: PriceObservation[];
-  missing: { symbol: string; reason: string }[];
-}
-
 export interface WalletBalance {
   amount: bigint;
-  /** "chain" = ft_balance_of on NEAR; "simulation" = simulated test-token wallet. */
-  source: "chain" | "simulation";
+  /** ft_balance_of on NEAR. */
+  source: "chain";
 }
 
 export interface FaucetResult extends LendingActionResult {
@@ -36,10 +27,8 @@ export interface ExecutionResult extends LendingActionResult {
 export interface LendingClientExt extends LendingClient {
   /** Wallet balance of a token, or null when unknown (no account / RPC error). */
   getWalletBalance(tokenId: string, accountId: string): Promise<WalletBalance | null>;
-  /** Testnet faucet (on-chain mint) or simulated faucet. Test tokens have no value. */
+  /** Testnet faucet: on-chain mint of a Radiri test token (no value). */
   faucet(accountId: string, tokenId: string, amount: string): Promise<FaucetResult>;
-  /** Price feed status (simulation only; null on-chain where the contract oracle is authoritative). */
-  getPriceFeedStatus(): PriceFeedStatus | null;
 }
 
 /** Rejected before signing: the same reasons the contract would give. */

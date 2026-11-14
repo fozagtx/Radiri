@@ -1,4 +1,4 @@
-import { Activity, ArrowLeftRight, ChartPie, HandCoins, Landmark, LayoutDashboard, Route } from "lucide-react";
+import { Activity, ArrowLeftRight, ChartPie, HandCoins, Landmark, LayoutDashboard } from "lucide-react";
 
 export interface AppNavItem {
   label: string;
@@ -14,10 +14,6 @@ export const PRIMARY_NAV: AppNavItem[] = [
   { label: "Markets", href: "/markets", icon: Landmark },
   { label: "Activity", href: "/activity", icon: Activity },
 ];
-
-export const TOOLS_NAV: AppNavItem[] = [{ label: "Route monitor", href: "/routes", icon: Route }];
-
-export const MOBILE_LINKS = [...PRIMARY_NAV, ...TOOLS_NAV].map(({ label, href }) => ({ label, href }));
 
 export function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);

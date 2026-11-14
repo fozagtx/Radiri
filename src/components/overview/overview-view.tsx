@@ -1,130 +1,229 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeftRight, ArrowRight, HandCoins } from "lucide-react";
+import NextLink from "next/link";
+import { AbsoluteCenter, Badge, Box, Button, Card, Container, Flex, Grid, Heading, HStack, LinkBox, LinkOverlay, Progress, ProgressCircle, SimpleGrid, Stack, Stat, Text } from "@chakra-ui/react";
+import { ArrowRight, Wallet } from "lucide-react";
 import { ActivityList } from "@/components/activity/activity-list";
 import { useActivityItems } from "@/components/activity/use-activity";
-import { AccountNotice, MarketNotice, SummaryTiles, usePortfolioTotals } from "@/components/shared/account-summary";
-import { AssetLabel, PageHeader, Section, SkeletonRows } from "@/components/shared/bits";
-import { amountOf } from "@/components/shared/format";
+import { TokenAvatar, TokenPair } from "@/components/app/token-avatar";
+import { MarketNotice, usePortfolioTotals } from "@/components/shared/account-summary";
+import { Section, SkeletonRows, TONE_PALETTE } from "@/components/shared/bits";
+import { amountOf, bandTone } from "@/components/shared/format";
 import { useLending } from "@/components/shared/lending-provider";
 import { ModeBanner } from "@/components/shared/mode-banner";
-import { formatUsdWad } from "@/lib/risk";
+import { formatHealthFactor, formatUsdWad, HEALTH_BAND_LABEL, healthBand, WAD } from "@/lib/risk";
+import { useNearWallet } from "@/lib/wallets/near";
 
 const JOURNEYS = [
-  {
-    href: "/borrow#stocks",
-    icon: HandCoins,
-    title: "Borrow stocks with meme coins",
-    body: "Lock meme coins as collateral and borrow tokenized stocks without selling them.",
-  },
-  {
-    href: "/borrow#memes",
-    icon: HandCoins,
-    title: "Borrow meme coins with stocks",
-    body: "Lock tokenized stocks as collateral and borrow meme coins against them.",
-  },
-  {
-    href: "/swap",
-    icon: ArrowLeftRight,
-    title: "Swap meme coins for stocks",
-    body: "Cross-chain through NEAR Intents, e.g. PEPE on Ethereum to tokenized Apple on BNB Chain.",
-  },
+  { href: "/borrow#stocks", from: { symbol: "PEPE" }, to: { symbol: "AAPL", category: "stock" }, title: "Borrow stocks with meme coins", body: "Lock PEPE, borrow tokenized Apple." },
+  { href: "/borrow#memes", from: { symbol: "NVDA", category: "stock" }, to: { symbol: "PEPE" }, title: "Borrow meme coins with stocks", body: "Lock tokenized NVIDIA, borrow PEPE." },
+  { href: "/swap", from: { symbol: "PEPE" }, to: { symbol: "TSLA", category: "stock" }, title: "Swap across chains", body: "PEPE on Ethereum to Tesla on BNB Chain." },
 ];
+
+function HealthGauge({ value }: { value: bigint | null }) {
+  const band = healthBand(value);
+  const palette = TONE_PALETTE[bandTone(band)];
+  const hf = value === null ? 3 : Math.min(3, Number((value * BigInt(100)) / WAD) / 100);
+  const pct = value === null ? 100 : Math.max(0, Math.min(100, ((hf - 1) / 2) * 100));
+  return (
+    <Stack align="center" gap="2">
+      <ProgressCircle.Root value={pct} size="xl" colorPalette={palette}>
+        <ProgressCircle.Circle css={{ "--size": "136px", "--thickness": "10px" }}>
+          <ProgressCircle.Track stroke="bg.muted" />
+          <ProgressCircle.Range strokeLinecap="round" />
+        </ProgressCircle.Circle>
+        <AbsoluteCenter>
+          <Text fontFamily="mono" textStyle="2xl">
+            {formatHealthFactor(value)}
+          </Text>
+        </AbsoluteCenter>
+      </ProgressCircle.Root>
+      <Badge colorPalette={palette} variant="subtle" borderRadius="full">
+        Health factor · {HEALTH_BAND_LABEL[band]}
+      </Badge>
+    </Stack>
+  );
+}
+
+function ConnectHero() {
+  const wallet = useNearWallet();
+  return (
+    <Card.Root variant="outline" bg="bg.panel" borderRadius="panel" boxShadow="panel" overflow="hidden" className="radiri-rise">
+      <Card.Body p={{ base: "6", md: "10" }}>
+        <Flex direction={{ base: "column", md: "row" }} align={{ md: "center" }} justify="space-between" gap="8">
+          <Box maxW="lg">
+            <Heading as="h1" fontFamily="display" fontWeight="normal" fontSize={{ base: "4xl", md: "6xl" }} lineHeight="1" letterSpacing="-0.03em">
+              Your meme coins, working as collateral.
+            </Heading>
+            <Text mt="3" color="fg.muted">
+              Connect a NEAR testnet wallet to see your positions, mint test tokens and borrow.
+            </Text>
+            <Button mt="6" size="lg" borderRadius="full" bg="ink" color="white" _hover={{ bg: "#2a2a2a" }} onClick={() => void wallet.signIn()} disabled={!wallet.ready || wallet.connecting}>
+              <Wallet size={18} aria-hidden />
+              Connect NEAR wallet
+            </Button>
+          </Box>
+          <Stack gap="4" align="center">
+            <TokenPair from={{ symbol: "PEPE" }} to={{ symbol: "AAPL", category: "stock" }} size="xl" />
+            <TokenPair from={{ symbol: "SHIB" }} to={{ symbol: "NVDA", category: "stock" }} size="xl" />
+          </Stack>
+        </Flex>
+      </Card.Body>
+    </Card.Root>
+  );
+}
+
+function PositionHero() {
+  const lending = useLending();
+  const totals = usePortfolioTotals();
+  const used = totals?.limitUsedBps ?? 0;
+  const metrics: [string, string][] = [
+    ["Collateral", totals ? formatUsdWad(totals.collateralWad, { compact: true }) : "–"],
+    ["Borrowed", totals ? formatUsdWad(totals.debtWad, { compact: true }) : "–"],
+    ["Can still borrow", totals ? formatUsdWad(totals.availableWad, { compact: true }) : "–"],
+    ["Open positions", totals ? String(totals.positions) : "–"],
+  ];
+  return (
+    <Card.Root variant="outline" bg="bg.panel" borderRadius="panel" boxShadow="panel" className="radiri-rise">
+      <Card.Body p={{ base: "6", md: "8" }}>
+        <Grid templateColumns={{ base: "1fr", md: "1fr auto" }} gap="8" alignItems="center">
+          <Stack gap="6">
+            <Stat.Root>
+              <Stat.Label color="fg.muted">Net position</Stat.Label>
+              <Stat.ValueText fontFamily="display" fontWeight="normal" fontSize={{ base: "5xl", md: "6xl" }} lineHeight="1">
+                {totals ? formatUsdWad(totals.netWad) : "–"}
+              </Stat.ValueText>
+              <Stat.HelpText fontFamily="mono" color="fg.muted">
+                {lending.walletAccountId}
+              </Stat.HelpText>
+            </Stat.Root>
+            <SimpleGrid columns={{ base: 2, sm: 4 }} gap="4">
+              {metrics.map(([label, value]) => (
+                <Stat.Root key={label}>
+                  <Stat.Label color="fg.muted" textStyle="xs">
+                    {label}
+                  </Stat.Label>
+                  <Stat.ValueText fontFamily="mono" textStyle="xl" fontWeight="medium">
+                    {value}
+                  </Stat.ValueText>
+                </Stat.Root>
+              ))}
+            </SimpleGrid>
+            <Progress.Root value={Math.min(100, used / 100)} size="sm" shape="full" colorPalette={used >= 9000 ? "red" : used >= 7000 ? "orange" : "green"}>
+              <HStack justify="space-between" mb="1.5">
+                <Progress.Label textStyle="xs" color="fg.muted" fontWeight="normal">
+                  Borrow limit used
+                </Progress.Label>
+                <Progress.ValueText fontFamily="mono" textStyle="xs" />
+              </HStack>
+              <Progress.Track bg="bg.muted">
+                <Progress.Range />
+              </Progress.Track>
+            </Progress.Root>
+          </Stack>
+          <Box borderLeftWidth={{ md: "1px" }} borderColor="border.muted" pl={{ md: "8" }}>
+            <HealthGauge value={totals?.healthFactorWad ?? null} />
+          </Box>
+        </Grid>
+      </Card.Body>
+    </Card.Root>
+  );
+}
 
 function Positions() {
   const lending = useLending();
   const risk = lending.risk;
   if (lending.accountState === "loading" && !lending.account) return <SkeletonRows rows={3} />;
   if (!risk || (risk.collateral.length === 0 && risk.debt.length === 0)) {
-    return <p className="py-2 text-xs text-muted-foreground">No open positions. Start on the Borrow page.</p>;
+    return (
+      <Text py="4" textStyle="sm" color="fg.muted">
+        No open positions yet. Start on the Borrow page.
+      </Text>
+    );
   }
-  const rows = [
-    ...risk.collateral.map((line) => ({ kind: "Collateral", ...line })),
-    ...risk.debt.map((line) => ({ kind: "Borrowed", ...line })),
-  ];
+  const rows = [...risk.collateral.map((line) => ({ kind: "Collateral", ...line })), ...risk.debt.map((line) => ({ kind: "Borrowed", ...line }))];
   return (
-    <ul className="divide-y divide-foreground/6">
+    <Stack gap="1">
       {rows.map((row) => {
         const asset = lending.assetIndex.get(row.tokenId);
         return (
-          <li key={`${row.kind}-${row.tokenId}`} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="w-20 shrink-0 text-[11px] text-muted-foreground">{row.kind}</span>
-              {asset ? <AssetLabel asset={asset} compact /> : <span className="font-mono text-xs">{row.tokenId}</span>}
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="font-mono tabular-nums">{asset ? amountOf(asset, row.amount, 4) : row.amount.toString()}</span>
-              <span className="font-mono text-[11px] text-muted-foreground tabular-nums">{formatUsdWad(row.valueWad)}</span>
-            </div>
-          </li>
+          <HStack key={`${row.kind}-${row.tokenId}`} gap="3" px="2" py="2.5" borderRadius="lg" _hover={{ bg: "bg.subtle" }}>
+            <TokenAvatar symbol={asset?.config.symbol ?? "?"} category={asset?.config.category} size="md" />
+            <Stack gap="0" flex="1" minW="0">
+              <Text fontWeight="semibold" textStyle="sm">
+                {asset?.config.symbol ?? row.tokenId}
+              </Text>
+              <Badge alignSelf="flex-start" size="xs" variant="subtle" colorPalette={row.kind === "Borrowed" ? "orange" : "gray"} borderRadius="full">
+                {row.kind}
+              </Badge>
+            </Stack>
+            <Stack gap="0" align="flex-end">
+              <Text fontFamily="mono" textStyle="sm">
+                {asset ? amountOf(asset, row.amount, 4) : row.amount.toString()}
+              </Text>
+              <Text fontFamily="mono" textStyle="xs" color="fg.muted">
+                {formatUsdWad(row.valueWad)}
+              </Text>
+            </Stack>
+          </HStack>
         );
       })}
-    </ul>
+    </Stack>
   );
 }
 
 export function OverviewView() {
-  const totals = usePortfolioTotals();
+  const lending = useLending();
   const items = useActivityItems();
-
   return (
-    <>
-      <PageHeader
-        title="Overview"
-        description="Your collateral, debt and borrowing capacity, valued with the same oracle prices the lending contract uses."
-      />
+    <Container maxW="6xl" px="4" py={{ base: "6", md: "10" }}>
       <ModeBanner />
-      <div className="mb-3 flex flex-col gap-2">
+      <Stack gap="5">
         <MarketNotice />
-        <AccountNotice />
-      </div>
+        {lending.walletAccountId ? <PositionHero /> : <ConnectHero />}
 
-      <div className="flex flex-col gap-3">
-        <SummaryTiles totals={totals} />
-
-        <div className="grid gap-3 md:grid-cols-3">
-          {JOURNEYS.map((journey) => (
-            <Link
+        <SimpleGrid columns={{ base: 1, md: 3 }} gap="4">
+          {JOURNEYS.map((journey, index) => (
+            <LinkBox
               key={journey.href}
-              href={journey.href}
-              className="group flex flex-col gap-1.5 rounded-xl bg-card px-3.5 py-3 ring-1 ring-foreground/10 transition-colors hover:ring-foreground/25"
+              as="article"
+              className="radiri-rise"
+              style={{ animationDelay: `${80 + index * 60}ms` }}
+              bg="bg.panel"
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="panel"
+              p="5"
+              transition="all 0.2s"
+              _hover={{ transform: "translateY(-2px)", boxShadow: "lift", borderColor: "border.emphasized" }}
             >
-              <span className="flex items-center justify-between">
-                <journey.icon className="size-4 text-foreground/70" aria-hidden />
-                <ArrowRight className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
-              </span>
-              <span className="text-[13.5px] font-semibold tracking-tight">{journey.title}</span>
-              <span className="text-xs text-muted-foreground">{journey.body}</span>
-            </Link>
+              <Flex justify="space-between" align="center" mb="4">
+                <TokenPair from={journey.from} to={journey.to} size="lg" />
+                <ArrowRight size={16} color="#8a8a86" aria-hidden />
+              </Flex>
+              <LinkOverlay asChild>
+                <NextLink href={journey.href}>
+                  <Text fontWeight="semibold" textStyle="md" letterSpacing="-0.01em">
+                    {journey.title}
+                  </Text>
+                </NextLink>
+              </LinkOverlay>
+              <Text textStyle="sm" color="fg.muted">
+                {journey.body}
+              </Text>
+            </LinkBox>
           ))}
-        </div>
+        </SimpleGrid>
 
-        <div className="grid items-start gap-3 lg:grid-cols-2">
-          <Section
-            title="Active positions"
-            description={totals ? `${totals.positions} open` : undefined}
-            action={
-              <Link href="/portfolio" className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
-                Portfolio
-              </Link>
-            }
-          >
+        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap="4" alignItems="start">
+          <Section title="Active positions" action={<NextLink href="/portfolio" style={{ fontSize: 12, color: "#5b5b5b" }}>Portfolio →</NextLink>}>
             <Positions />
           </Section>
-
-          <Section
-            title="Recent activity"
-            action={
-              <Link href="/activity" className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
-                All activity
-              </Link>
-            }
-          >
+          <Section title="Recent activity" action={<NextLink href="/activity" style={{ fontSize: 12, color: "#5b5b5b" }}>All activity →</NextLink>}>
             <ActivityList items={items.slice(0, 6)} empty="No activity yet." />
           </Section>
-        </div>
-      </div>
-    </>
+        </Grid>
+      </Stack>
+    </Container>
   );
 }

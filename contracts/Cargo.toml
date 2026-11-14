@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["snapshot-registry", "lending", "test-token"]
+members = ["lending", "test-token"]
 
 [workspace.dependencies]
 near-sdk = "5.30.1"

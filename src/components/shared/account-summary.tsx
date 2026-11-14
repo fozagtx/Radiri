@@ -1,7 +1,7 @@
 "use client";
 
+import { Box, Button, Flex, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import { Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { BPS, formatUsdWad, mulDivUp, pricedAsset, valueWad, ZERO } from "@/lib/risk";
 import { useNearWallet } from "@/lib/wallets/near";
 import { HealthValue, LimitMeter, Note, StatTile } from "./bits";
@@ -48,14 +48,9 @@ export function usePortfolioTotals(): PortfolioTotals | null {
 export function SummaryTiles({ totals }: { totals: PortfolioTotals | null }) {
   const dash = "–";
   return (
-    <div className="flex flex-col gap-3">
-      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-        <StatTile
-          label="Portfolio value"
-          value={totals ? formatUsdWad(totals.netWad, { compact: true }) : dash}
-          hint="Collateral + supplied − debt"
-          className="col-span-2 sm:col-span-1"
-        />
+    <Stack gap="4">
+      <SimpleGrid columns={{ base: 2, md: 3, xl: 5 }} gap="3">
+        <StatTile label="Portfolio value" value={totals ? formatUsdWad(totals.netWad, { compact: true }) : dash} hint="Collateral + supplied − debt" />
         <StatTile label="Total collateral" value={totals ? formatUsdWad(totals.collateralWad, { compact: true }) : dash} />
         <StatTile label="Total borrowed" value={totals ? formatUsdWad(totals.debtWad, { compact: true }) : dash} hint="Incl. accrued interest" />
         <StatTile
@@ -63,42 +58,30 @@ export function SummaryTiles({ totals }: { totals: PortfolioTotals | null }) {
           value={totals ? formatUsdWad(totals.availableWad, { compact: true }) : dash}
           hint={totals ? `Limit ${formatUsdWad(totals.borrowLimitWad, { compact: true })}` : undefined}
         />
-        <StatTile
-          label="Health factor"
-          value={totals ? <HealthValue value={totals.healthFactorWad} /> : dash}
-          hint="Liquidation below 1.00"
-          className="col-span-2 sm:col-span-1"
-        />
-      </dl>
+        <StatTile label="Health factor" value={totals ? <HealthValue value={totals.healthFactorWad} /> : dash} hint="Liquidation below 1.00" />
+      </SimpleGrid>
       {totals ? <LimitMeter usedBps={totals.limitUsedBps} /> : null}
-    </div>
+    </Stack>
   );
 }
 
-/** Market-level problems: contract unreadable, or (simulation) reference prices unavailable. */
+/** Market-level problems: contract unreadable, or on-chain oracle prices stale. */
 export function MarketNotice() {
-  const { marketsError, priceFeed, mode } = useLending();
+  const { marketsError, assets, oracle } = useLending();
   if (marketsError) {
-    return <Note tone="bad">Lending markets could not be loaded: {marketsError}</Note>;
+    return <Note tone="bad">The lending contract could not be read: {marketsError}</Note>;
   }
-  if (mode !== "simulation" || !priceFeed) return null;
-  if (priceFeed.error) {
-    return (
-      <Note tone="bad">
-        Reference prices are unavailable ({priceFeed.error}). Without a fresh price no borrow is allowed, exactly as the
-        contract&apos;s oracle would behave.
-      </Note>
-    );
+  const stale = assets.filter((asset) => !asset.price_fresh).map((asset) => asset.config.symbol);
+  if (stale.length === 0) return null;
+  if (oracle.refreshing) {
+    return <Note tone="neutral">Pushing fresh 1Click prices to the contract oracle for {stale.join(", ")}…</Note>;
   }
-  if (priceFeed.missing.length > 0) {
-    return (
-      <Note tone="warn">
-        No reference price for {priceFeed.missing.map((item) => `${item.symbol} (${item.reason})`).join(", ")}. Those test
-        tokens cannot be borrowed or used to back a borrow until a price arrives.
-      </Note>
-    );
-  }
-  return null;
+  return (
+    <Note tone="warn">
+      On-chain price for {stale.join(", ")} is stale, so the contract blocks borrowing and liquidation against it until a
+      fresh price is reported{oracle.error ? ` (automatic refresh failed: ${oracle.error})` : ""}.
+    </Note>
+  );
 }
 
 /** Explains whose positions are shown, and asks for a wallet when the chain needs one. */
@@ -106,26 +89,33 @@ export function AccountNotice() {
   const lending = useLending();
   const wallet = useNearWallet();
 
-  if (lending.mode === "near" && !lending.walletAccountId) {
+  if (!lending.walletAccountId) {
     return (
-      <Note tone="neutral">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span>Connect a NEAR {wallet.network} wallet to load your lending positions from the contract.</span>
-          <Button size="sm" variant="outline" onClick={() => void wallet.signIn()} disabled={!wallet.ready || wallet.connecting}>
-            <Wallet aria-hidden />
-            Connect NEAR wallet
-          </Button>
-        </div>
-      </Note>
-    );
-  }
-
-  if (lending.isLocalSimAccount) {
-    return (
-      <Note tone="neutral">
-        Simulated positions for a local browser account. Connect a NEAR wallet to keep a separate simulation per account
-        (still nothing is signed).
-      </Note>
+      <Flex
+        align="center"
+        justify="space-between"
+        wrap="wrap"
+        gap="3"
+        px="4"
+        py="3"
+        borderRadius="xl"
+        borderWidth="1px"
+        borderColor="border"
+        bg="bg.panel"
+      >
+        <Box>
+          <Text textStyle="sm" fontWeight="semibold">
+            Connect your NEAR {wallet.network} wallet
+          </Text>
+          <Text textStyle="xs" color="fg.muted">
+            Your positions are read from the lending contract, and every action is signed by you.
+          </Text>
+        </Box>
+        <Button size="sm" borderRadius="full" bg="ink" color="white" _hover={{ bg: "#2a2a2a" }} onClick={() => void wallet.signIn()} disabled={!wallet.ready || wallet.connecting}>
+          <Wallet size={15} aria-hidden />
+          Connect NEAR wallet
+        </Button>
+      </Flex>
     );
   }
 

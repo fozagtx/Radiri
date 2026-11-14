@@ -1,9 +1,9 @@
 import type { AssetConfig } from "@/types/protocol";
+import { TESTNET_DEPLOYMENT } from "./deployment";
 
 /**
  * Canonical lending asset table. It drives:
  *   - contracts/lending/assets.testnet.json (register_asset calls in scripts/deploy-lending.sh),
- *   - the labelled SimulatedLendingClient when no lending contract is configured,
  *   - collateral / borrow eligibility in /api/assets before a contract is deployed.
  * When a contract is configured, its on-chain registry is authoritative and this table is ignored.
  *
@@ -35,7 +35,7 @@ const MEME_INTEREST = { base_bps: 200, slope1_bps: 1200, slope2_bps: 30000, opti
 const STOCK_INTEREST = { base_bps: 100, slope1_bps: 800, slope2_bps: 20000, optimal_utilization_bps: 7000 };
 
 /** Account suffix the deploy script uses for test tokens, e.g. tpepe.<suffix>. */
-export const TEST_TOKEN_SUFFIX = process.env.NEXT_PUBLIC_TEST_TOKEN_SUFFIX ?? "radiri.testnet";
+export const TEST_TOKEN_SUFFIX = process.env.NEXT_PUBLIC_TEST_TOKEN_SUFFIX || TESTNET_DEPLOYMENT.tokenSuffix;
 
 function meme(symbol: string, reference: string, decimals: number, collateralCapWhole: bigint, name: string): LendingAssetSpec {
   const unit = BigInt(10) ** BigInt(decimals);

@@ -4,7 +4,8 @@ import { NotchNavbar } from "@/components/ui/notch-navbar";
 import { LiveQuote } from "@/components/landing/live-quote";
 import { RadiriMark } from "@/components/landing/mark";
 import { RevealObserver } from "@/components/landing/reveal";
-import { IntentsMark, RegistryMark, RheaMark, RpcMark } from "@/components/landing/venue-marks";
+import { AssetStrip } from "@/components/landing/asset-strip";
+import { LiveTicker } from "@/components/app/live-ticker";
 
 export default function LandingPage() {
   return (
@@ -39,23 +40,8 @@ export default function LandingPage() {
         </div>
       </AuroraHero>
 
-      <div className="lp-venues">
-        <p>Sources and rails</p>
-        <div className="lp-venues-row">
-          <span>
-            <IntentsMark /> NEAR Intents 1Click
-          </span>
-          <span>
-            <RegistryMark /> Radiri lending contract
-          </span>
-          <span>
-            <RheaMark /> Rhea Lending (reference)
-          </span>
-          <span>
-            <RpcMark /> FastNEAR RPC
-          </span>
-        </div>
-      </div>
+      <LiveTicker />
+      <AssetStrip />
 
       <section className="lp-wash" id="how">
         <div className="lp-inner lp-reveal">

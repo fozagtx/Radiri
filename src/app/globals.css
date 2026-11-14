@@ -1,3 +1,7 @@
+/* One cascade order for Tailwind and Chakra UI: Chakra recipes beat Tailwind preflight, and the few
+   Tailwind utilities used inside Chakra pages still beat Chakra's reset. */
+@layer theme, reset, base, tokens, recipes, components, utilities;
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -7,7 +11,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -133,4 +137,34 @@
   font-family: var(--font-display, ui-serif, Georgia, serif);
   font-weight: 400;
   letter-spacing: -0.035em;
+}
+/* ---------- motion: live ticker, price flashes, entrance ---------- */
+@keyframes radiri-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes radiri-flash-up {
+  0% { background-color: rgba(47, 125, 81, 0.22); }
+  100% { background-color: transparent; }
+}
+@keyframes radiri-flash-down {
+  0% { background-color: rgba(180, 50, 42, 0.2); }
+  100% { background-color: transparent; }
+}
+@keyframes radiri-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes radiri-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(47, 125, 81, 0.45); }
+  50% { box-shadow: 0 0 0 5px rgba(47, 125, 81, 0); }
+}
+.radiri-marquee { animation: radiri-marquee 70s linear infinite; }
+.radiri-marquee:hover { animation-play-state: paused; }
+.radiri-flash-up { animation: radiri-flash-up 1.6s ease-out; }
+.radiri-flash-down { animation: radiri-flash-down 1.6s ease-out; }
+.radiri-rise { animation: radiri-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.radiri-live-dot { animation: radiri-pulse 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .radiri-marquee, .radiri-flash-up, .radiri-flash-down, .radiri-rise, .radiri-live-dot { animation: none; }
 }

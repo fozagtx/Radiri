@@ -1,42 +1,30 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { LENDING_CONTRACT_ID, LENDING_MODE } from "@/lib/config";
-import {
-  type ExecutionResult,
-  type FaucetResult,
-  getLendingClient,
-  type LendingClientExt,
-  LOCAL_SIM_ACCOUNT,
-  type PriceFeedStatus,
-  SIM_CHANGED_EVENT,
-  type WalletBalance,
-} from "@/lib/lending";
-import {
-  type AccountRisk,
-  assetMap,
-  computeAccountRisk,
-  emptyHoldings,
-  type Holdings,
-  holdingsFromAccount,
-  type MarketContext,
-} from "@/lib/risk";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { LENDING_CONTRACT_ID } from "@/lib/config";
+import { type ExecutionResult, type FaucetResult, getLendingClient, type LendingClientExt, type WalletBalance } from "@/lib/lending";
+import { type AccountRisk, assetMap, computeAccountRisk, emptyHoldings, type Holdings, holdingsFromAccount, type MarketContext } from "@/lib/risk";
 import { useNearWallet } from "@/lib/wallets/near";
 import type { AccountView, ActivityEntry, AssetView, LendingAction, LendingConfigView, LendingMode } from "@/types/protocol";
 import { useNow } from "./use-now";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 
+export interface OracleState {
+  refreshing: boolean;
+  /** Why the last automatic price refresh did not happen, if it did not. */
+  error: string | null;
+  lastTxHash: string | null;
+}
+
 export interface LendingContextValue {
   mode: LendingMode;
-  contractId: string | null;
+  contractId: string;
   client: LendingClientExt;
-  /** Connected NEAR wallet account, if any. */
+  /** Connected NEAR testnet wallet account, if any. Positions are shown for this account. */
   walletAccountId: string | null;
   walletReady: boolean;
-  /** Account whose lending positions are shown: the wallet on chain; wallet or a local id in simulation. */
   accountId: string | null;
-  isLocalSimAccount: boolean;
   config: LendingConfigView | null;
   assets: AssetView[];
   assetIndex: Map<string, AssetView>;
@@ -46,7 +34,7 @@ export interface LendingContextValue {
   /** Risk recomputed locally with the current clock (null until markets and the clock are ready). */
   risk: AccountRisk | null;
   market: MarketContext | null;
-  priceFeed: PriceFeedStatus | null;
+  oracle: OracleState;
   balances: Record<string, WalletBalance | null>;
   nowMs: number;
   marketsState: LoadState;
@@ -66,6 +54,8 @@ function message(error: unknown): string {
 }
 
 const POLL_MS = 30_000;
+/** Do not ask the server to push prices more often than this. */
+const ORACLE_RETRY_MS = 60_000;
 
 export function LendingProvider({ children }: { children: React.ReactNode }) {
   const wallet = useNearWallet();
@@ -77,19 +67,19 @@ export function LendingProvider({ children }: { children: React.ReactNode }) {
     () => getLendingClient({ signer: walletAccountId ? { signAndSendTransactions: signAndSend } : null }),
     [walletAccountId, signAndSend],
   );
-
-  const accountId = LENDING_MODE === "near" ? walletAccountId : walletAccountId ?? (wallet.ready ? LOCAL_SIM_ACCOUNT : null);
+  const accountId = walletAccountId;
 
   const [config, setConfig] = useState<LendingConfigView | null>(null);
   const [assets, setAssets] = useState<AssetView[]>([]);
   const [account, setAccount] = useState<AccountView | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [balances, setBalances] = useState<Record<string, WalletBalance | null>>({});
-  const [priceFeed, setPriceFeed] = useState<PriceFeedStatus | null>(null);
   const [marketsState, setMarketsState] = useState<LoadState>("idle");
   const [accountState, setAccountState] = useState<LoadState>("idle");
   const [marketsError, setMarketsError] = useState<string | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
+  const [oracle, setOracle] = useState<OracleState>({ refreshing: false, error: null, lastTxHash: null });
+  const lastOracleAttempt = useRef(0);
 
   const loadMarkets = useCallback(async () => {
     setMarketsState((state) => (state === "ready" ? state : "loading"));
@@ -97,14 +87,12 @@ export function LendingProvider({ children }: { children: React.ReactNode }) {
       const [nextConfig, nextAssets] = await Promise.all([client.getConfig(), client.getAssets()]);
       setConfig(nextConfig);
       setAssets(nextAssets);
-      setPriceFeed(client.getPriceFeedStatus());
       setMarketsError(null);
       setMarketsState("ready");
       return nextAssets;
     } catch (error) {
       setMarketsError(message(error));
       setMarketsState("error");
-      setPriceFeed(client.getPriceFeedStatus());
       return null;
     }
   }, [client]);
@@ -140,9 +128,30 @@ export function LendingProvider({ children }: { children: React.ReactNode }) {
     setBalances(Object.fromEntries(entries));
   }, [client, accountId, assets]);
 
+  /** On-chain prices expire; ask the server to push live 1Click prices when any has. */
+  const refreshOracleIfStale = useCallback(
+    async (current: AssetView[] | null) => {
+      if (!current || current.every((asset) => asset.price_fresh)) return false;
+      if (Date.now() - lastOracleAttempt.current < ORACLE_RETRY_MS) return false;
+      lastOracleAttempt.current = Date.now();
+      setOracle((state) => ({ ...state, refreshing: true }));
+      try {
+        const res = await fetch("/api/oracle/refresh", { method: "POST" });
+        const body = (await res.json()) as { submitted: boolean; reason: string; txHash: string | null };
+        setOracle({ refreshing: false, error: res.ok ? null : body.reason, lastTxHash: body.txHash });
+        return body.submitted;
+      } catch (error) {
+        setOracle({ refreshing: false, error: message(error), lastTxHash: null });
+        return false;
+      }
+    },
+    [],
+  );
+
   const refresh = useCallback(async () => {
-    await Promise.all([loadMarkets(), loadAccount()]);
-  }, [loadMarkets, loadAccount]);
+    const [nextAssets] = await Promise.all([loadMarkets(), loadAccount()]);
+    if (await refreshOracleIfStale(nextAssets)) await Promise.all([loadMarkets(), loadAccount()]);
+  }, [loadMarkets, loadAccount, refreshOracleIfStale]);
 
   useEffect(() => {
     const first = setTimeout(() => void refresh(), 0);
@@ -158,20 +167,9 @@ export function LendingProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [loadBalances]);
 
-  // Simulation writes from other tabs or components.
-  useEffect(() => {
-    if (LENDING_MODE !== "simulation") return;
-    const onChange = () => {
-      void loadAccount();
-      void loadBalances();
-    };
-    window.addEventListener(SIM_CHANGED_EVENT, onChange);
-    return () => window.removeEventListener(SIM_CHANGED_EVENT, onChange);
-  }, [loadAccount, loadBalances]);
-
   const execute = useCallback(
     async (action: LendingAction) => {
-      if (!accountId) throw new Error(LENDING_MODE === "near" ? "Connect a NEAR wallet first" : "Simulation account not ready");
+      if (!accountId) throw new Error("Connect a NEAR testnet wallet first");
       const result = (await client.execute(accountId, action)) as ExecutionResult;
       await Promise.all([refresh(), loadBalances()]);
       return { ...result, notes: result.notes ?? [] };
@@ -181,7 +179,7 @@ export function LendingProvider({ children }: { children: React.ReactNode }) {
 
   const faucet = useCallback(
     async (tokenId: string, amount: string) => {
-      if (!accountId) throw new Error("Connect a NEAR wallet first");
+      if (!accountId) throw new Error("Connect a NEAR testnet wallet first");
       const result = await client.faucet(accountId, tokenId, amount);
       await loadBalances();
       return result;
@@ -199,13 +197,12 @@ export function LendingProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<LendingContextValue>(
     () => ({
-      mode: LENDING_MODE,
-      contractId: LENDING_MODE === "near" ? LENDING_CONTRACT_ID : null,
+      mode: "near",
+      contractId: LENDING_CONTRACT_ID,
       client,
       walletAccountId,
       walletReady: wallet.ready,
       accountId,
-      isLocalSimAccount: LENDING_MODE === "simulation" && accountId === LOCAL_SIM_ACCOUNT,
       config,
       assets,
       assetIndex,
@@ -214,7 +211,7 @@ export function LendingProvider({ children }: { children: React.ReactNode }) {
       holdings,
       risk,
       market,
-      priceFeed,
+      oracle,
       balances,
       nowMs,
       marketsState,
@@ -239,7 +236,7 @@ export function LendingProvider({ children }: { children: React.ReactNode }) {
       holdings,
       risk,
       market,
-      priceFeed,
+      oracle,
       balances,
       nowMs,
       marketsState,

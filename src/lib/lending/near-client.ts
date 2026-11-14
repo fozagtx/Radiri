@@ -149,10 +149,6 @@ export class NearLendingClient implements LendingClientExt {
     }
   }
 
-  getPriceFeedStatus(): null {
-    return null;
-  }
-
   /* ---------------------------- signing ---------------------------- */
 
   private requireSigner(): NearTransactionSigner {
