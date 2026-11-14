@@ -75,11 +75,16 @@ export function lendingMethodTx(
   };
 }
 
-/** Testnet faucet: the Radiri test token's mint(account_id, amount). Test tokens have no value. */
-export function testTokenMintTx(tokenId: string, accountId: string, amount: U128): NearTransaction {
+/**
+ * Testnet faucet: the Radiri test token's mint(account_id, amount). Test tokens have no value.
+ * `mint` registers an unregistered account itself when at least the storage minimum is attached,
+ * so passing it as the deposit keeps the faucet to one transaction instead of a
+ * storage_deposit + mint batch.
+ */
+export function testTokenMintTx(tokenId: string, accountId: string, amount: U128, deposit = "0"): NearTransaction {
   return {
     receiverId: tokenId,
-    actions: [functionCall("mint", { account_id: accountId, amount }, MINT_GAS, "0")],
+    actions: [functionCall("mint", { account_id: accountId, amount }, MINT_GAS, deposit)],
   };
 }
 

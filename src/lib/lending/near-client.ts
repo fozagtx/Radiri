@@ -14,7 +14,6 @@ import {
   planLendingAction,
   storageBalanceBounds,
   storageBalanceOf,
-  storageDepositTx,
   testTokenMintTx,
   DEFAULT_TOKEN_STORAGE_DEPOSIT,
   type NearTransaction,
@@ -224,9 +223,10 @@ export class NearLendingClient implements LendingClientExt {
     const value = u128(amount, "amount");
     if (value === ZERO) throw new LendingActionError("Faucet amount must be above zero");
     const token = await this.tokenStorage(tokenId, accountId);
-    const transactions: NearTransaction[] = [];
-    if (!token.registered) transactions.push(storageDepositTx(tokenId, accountId, token.deposit));
-    transactions.push(testTokenMintTx(tokenId, accountId, amount));
+    // mint auto-registers when the storage deposit is attached, so this is always one transaction.
+    const transactions: NearTransaction[] = [
+      testTokenMintTx(tokenId, accountId, amount, token.registered ? "0" : token.deposit),
+    ];
     const { txHashes, explorerUrls } = await this.send(transactions);
     return { mode: "near", txHashes, explorerUrls, tokenId, amount };
   }

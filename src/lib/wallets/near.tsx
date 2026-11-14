@@ -41,14 +41,44 @@ const NearWalletContext = createContext<NearWalletState | null>(null);
 
 let connectorPromise: Promise<NearConnector> | null = null;
 
+/** How long a wallet may sit on a signing request before the UI gives up. */
+const WALLET_TIMEOUT_MS = 90_000;
+
+/** Only offer (and keep) wallets that declare support for the network this app uses. */
+function supportsNetwork(wallet: NearWalletBase): boolean {
+  const features = wallet.manifest?.features;
+  if (!features) return true;
+  return NETWORK === "testnet" ? features.testnet !== false : features.mainnet !== false;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 function getConnector(): Promise<NearConnector> {
   connectorPromise ??= import("@hot-labs/near-connect").then(
     ({ NearConnector }) =>
       new NearConnector({
         network: NETWORK,
         providers: NETWORK === "mainnet" ? { mainnet: [RPC_URL] } : { testnet: [RPC_URL] },
-        // Lending actions batch storage registration + the call: require multi-transaction signing.
-        features: { signAndSendTransactions: true },
+        // Lending actions batch storage registration + the call: require multi-transaction signing,
+        // and only list wallets that support the network we actually read and write.
+        features: {
+          signAndSendTransactions: true,
+          ...(NETWORK === "testnet" ? { testnet: true } : { mainnet: true }),
+        },
       }),
   );
   return connectorPromise;
@@ -84,9 +114,12 @@ export function NearWalletProvider({ children }: { children: React.ReactNode }) 
 
       const restored = await connector.getConnectedWallet().catch(() => null);
       if (cancelled) return;
-      if (restored) {
+      if (restored && supportsNetwork(restored.wallet)) {
         walletRef.current = restored.wallet;
         setAccountId(restored.accounts[0]?.accountId ?? null);
+      } else if (restored) {
+        // A restored wallet that cannot sign this network would hang on the first action.
+        await connector.disconnect(restored.wallet).catch(() => undefined);
       }
 
       const handleSignIn = (payload: EventMap["wallet:signIn"]) => {
@@ -121,6 +154,9 @@ export function NearWalletProvider({ children }: { children: React.ReactNode }) 
     try {
       const connector = await getConnector();
       const wallet = await connector.connect();
+      if (!supportsNetwork(wallet)) {
+        throw new Error(`${wallet.manifest?.name ?? "This wallet"} cannot sign NEAR ${NETWORK}. Choose a wallet that supports ${NETWORK}.`);
+      }
       walletRef.current = wallet;
       const accounts = await wallet.getAccounts();
       setAccountId(accounts[0]?.accountId ?? null);
@@ -147,11 +183,18 @@ export function NearWalletProvider({ children }: { children: React.ReactNode }) 
     async (transactions: NearTransactionInput[]) => {
       const connector = await getConnector();
       const wallet = walletRef.current ?? (await connector.wallet());
-      const outcomes = await wallet.signAndSendTransactions({
-        network: NETWORK,
-        signerId: accountId ?? undefined,
-        transactions: transactions.map((tx) => ({ receiverId: tx.receiverId, actions: tx.actions as ConnectorAction[] })),
-      });
+      if (!supportsNetwork(wallet)) {
+        throw new Error(`${wallet.manifest?.name ?? "This wallet"} cannot sign NEAR ${NETWORK}. Disconnect it and choose a wallet that supports ${NETWORK}.`);
+      }
+      const outcomes = await withTimeout(
+        wallet.signAndSendTransactions({
+          network: NETWORK,
+          signerId: accountId ?? undefined,
+          transactions: transactions.map((tx) => ({ receiverId: tx.receiverId, actions: tx.actions as ConnectorAction[] })),
+        }),
+        WALLET_TIMEOUT_MS,
+        `${wallet.manifest?.name ?? "Your wallet"} did not answer within 90 s. It may be on the wrong network (this app uses ${NETWORK}) or its approval window was blocked.`,
+      );
       return outcomes as unknown[];
     },
     [accountId],
