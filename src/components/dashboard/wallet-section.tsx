@@ -26,7 +26,7 @@ function WalletRow({ chain, logo, hint, address, busy, onConnect, onDisconnect }
   return (
     <HStack justify="space-between" gap="3" py="2">
       <HStack gap="2.5" minW="0">
-        <ChainLogo chain={logo} className="size-7" />
+        <ChainLogo chain={logo} size={28} />
         <Stack gap="0" minW="0">
           <Text textStyle="sm" fontWeight="semibold">
             {chain}

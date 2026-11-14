@@ -1,27 +1,16 @@
-import NetworkArbitrumOne from "@web3icons/react/icons/networks/NetworkArbitrumOne";
-import NetworkAvalanche from "@web3icons/react/icons/networks/NetworkAvalanche";
-import NetworkBase from "@web3icons/react/icons/networks/NetworkBase";
-import NetworkBinanceSmartChain from "@web3icons/react/icons/networks/NetworkBinanceSmartChain";
-import NetworkEthereum from "@web3icons/react/icons/networks/NetworkEthereum";
-import NetworkNearProtocol from "@web3icons/react/icons/networks/NetworkNearProtocol";
-import NetworkOptimism from "@web3icons/react/icons/networks/NetworkOptimism";
-import NetworkPolygon from "@web3icons/react/icons/networks/NetworkPolygon";
-import NetworkSolana from "@web3icons/react/icons/networks/NetworkSolana";
-import TokenDOGE from "@web3icons/react/icons/tokens/TokenDOGE";
-import TokenMOG from "@web3icons/react/icons/tokens/TokenMOG";
-import TokenNEAR from "@web3icons/react/icons/tokens/TokenNEAR";
-import TokenPEPE from "@web3icons/react/icons/tokens/TokenPEPE";
-import TokenSHIB from "@web3icons/react/icons/tokens/TokenSHIB";
-import TokenSPX from "@web3icons/react/icons/tokens/TokenSPX";
-import TokenXAUT from "@web3icons/react/icons/tokens/TokenXAUT";
-import { siApple, siCircle, siGoogle, siIntel, siMeta, siNvidia, siRobinhood, siTesla, type SimpleIcon } from "simple-icons";
+import Image from "next/image";
+import { siNvidia, siRobinhood, siTesla, type SimpleIcon } from "simple-icons";
 import { cn } from "@/lib/utils";
+import { BRAND_LOGOS } from "./brand-logos";
 
 /**
- * Token marks. Real logos where an open icon set has them (web3icons for coins and chains, MIT;
- * simple-icons for company brands, CC0), otherwise a pastel tile with the ticker's initials.
- * Meme coins are round, tokenized stocks are rounded squares, so the two classes read apart.
- * Test tokens share their reference's mark: tPEPE shows PEPE, tAAPL and AAPLon show Apple.
+ * Real logos only:
+ *   - meme coins and chains: the projects' own logo images from the Trust Wallet assets repository,
+ *     or the NEAR token's on-chain NEP-148 icon, served from /public/logos (scripts/fetch-logos.mjs);
+ *   - tokenized stocks: the company's brand mark (Apple, Google, Amazon, Meta, Microsoft, Intel from
+ *     scripts/gen-brand-logos.mjs; Tesla, NVIDIA, Robinhood from simple-icons) on a white app-icon tile.
+ * Assets with no published logo get a plain ticker tile. Test tokens share their reference's mark:
+ * tPEPE shows PEPE, tAAPL and AAPLon show Apple. Meme coins are round, stocks are rounded squares.
  */
 export function baseTicker(symbol: string): string {
   let ticker = symbol.replace(/^\$/, "");
@@ -30,110 +19,116 @@ export function baseTicker(symbol: string): string {
   return ticker.toUpperCase();
 }
 
-type IconComponent = typeof TokenPEPE;
-
-const COIN_LOGOS: Record<string, IconComponent> = {
-  PEPE: TokenPEPE,
-  SHIB: TokenSHIB,
-  MOG: TokenMOG,
-  SPX: TokenSPX,
-  DOGE: TokenDOGE,
-  NEAR: TokenNEAR,
-  WNEAR: TokenNEAR,
-  XAUT: TokenXAUT,
+/** Ticker -> file in /public/logos/coins (Trust Wallet assets, or the token's on-chain NEP-148 icon). */
+const COIN_IMAGES: Record<string, string> = {
+  PEPE: "pepe.png",
+  SHIB: "shib.png",
+  MOG: "mog.png",
+  SPX: "spx.png",
+  TURBO: "turbo.png",
+  BRETT: "brett.png",
+  WIF: "wif.png",
+  BOME: "bome.png",
+  TRUMP: "trump.png",
+  PENGU: "pengu.png",
+  MELANIA: "melania.png",
+  BONK: "bonk.png",
+  DOGE: "doge.png",
+  NEAR: "near.png",
+  WNEAR: "near.png",
+  BLACKDRAGON: "blackdragon.jpg",
+  SHITZU: "shitzu.webp",
+  ABG: "abg.webp",
+  GNEAR: "gnear.svg",
+  JAMBO: "jambo.webp",
+  NOEAR: "noear.webp",
+  PURGE: "purge.webp",
 };
 
-const STOCK_LOGOS: Record<string, SimpleIcon> = {
-  AAPL: siApple,
-  TSLA: siTesla,
-  NVDA: siNvidia,
-  GOOGL: siGoogle,
-  META: siMeta,
-  INTC: siIntel,
-  HOOD: siRobinhood,
-  CRCL: siCircle,
+const SIMPLE_STOCKS: Record<string, { icon: SimpleIcon; fg: string; bg: string }> = {
+  TSLA: { icon: siTesla, fg: "#CC0000", bg: "#ffffff" },
+  NVDA: { icon: siNvidia, fg: "#76B900", bg: "#ffffff" },
+  HOOD: { icon: siRobinhood, fg: "#191919", bg: "#CCFF00" },
 };
 
-const CHAIN_LOGOS: Record<string, IconComponent> = {
-  eth: NetworkEthereum,
-  sol: NetworkSolana,
-  bsc: NetworkBinanceSmartChain,
-  near: NetworkNearProtocol,
-  base: NetworkBase,
-  arb: NetworkArbitrumOne,
-  pol: NetworkPolygon,
-  op: NetworkOptimism,
-  avax: NetworkAvalanche,
-};
+const CHAIN_IMAGES = new Set(["eth", "sol", "bsc", "near", "base", "arb", "pol", "op", "avax", "doge"]);
 
-function hueOf(ticker: string): number {
-  let hash = 0;
-  for (const char of ticker) hash = (hash * 31 + char.charCodeAt(0)) % 360;
-  return hash;
-}
-
-/** Relative luminance of a #rrggbb colour, 0..1. */
-function luminance(hex: string): number {
-  const [r, g, b] = [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-const SIZES = {
-  xs: { box: "size-5", text: "text-[7.5px]", px: 20, badge: "size-2.5" },
-  sm: { box: "size-7", text: "text-[9px]", px: 28, badge: "size-3" },
-  md: { box: "size-9", text: "text-[11px]", px: 36, badge: "size-3.5" },
-  lg: { box: "size-11", text: "text-[13px]", px: 44, badge: "size-4" },
-  xl: { box: "size-14", text: "text-[16px]", px: 56, badge: "size-5" },
-} as const;
-
+const SIZES = { xs: 20, sm: 28, md: 36, lg: 44, xl: 56 } as const;
 export type TokenAvatarSize = keyof typeof SIZES;
 
 function Mark({ symbol, category, size }: { symbol: string; category?: string; size: TokenAvatarSize }) {
   const ticker = baseTicker(symbol);
+  const px = SIZES[size];
   const stock = category === "stock";
-  const dims = SIZES[size];
-  const shape = stock ? "rounded-[30%]" : "rounded-full";
+  const radius = stock ? Math.round(px * 0.28) : px / 2;
+  const tile: React.CSSProperties = {
+    width: px,
+    height: px,
+    borderRadius: radius,
+    flexShrink: 0,
+    display: "inline-grid",
+    placeItems: "center",
+    overflow: "hidden",
+  };
 
-  const brand = stock ? STOCK_LOGOS[ticker] : undefined;
+  const brand = stock ? BRAND_LOGOS[ticker] : undefined;
   if (brand) {
-    const dark = luminance(brand.hex) < 0.55;
     return (
-      <span
-        className={cn("inline-grid shrink-0 place-items-center overflow-hidden", shape, dims.box)}
-        style={{ background: `#${brand.hex}` }}
-      >
-        <svg viewBox="0 0 24 24" className="size-[58%]" role="img" aria-label={`${brand.title} logo`}>
-          <path d={brand.path} fill={dark ? "#ffffff" : "#191919"} />
+      <span style={{ ...tile, background: "#ffffff", boxShadow: "inset 0 0 0 1px rgba(25,25,25,0.1)" }} title={brand.title}>
+        <svg
+          viewBox={`0 0 ${brand.width} ${brand.height}`}
+          width={Math.round(px * 0.6)}
+          height={Math.round(px * 0.6)}
+          role="img"
+          aria-label={`${brand.title} logo`}
+          dangerouslySetInnerHTML={{ __html: brand.body }}
+        />
+      </span>
+    );
+  }
+
+  const simple = stock ? SIMPLE_STOCKS[ticker] : undefined;
+  if (simple) {
+    return (
+      <span style={{ ...tile, background: simple.bg, boxShadow: "inset 0 0 0 1px rgba(25,25,25,0.1)" }} title={simple.icon.title}>
+        <svg viewBox="0 0 24 24" width={Math.round(px * 0.58)} height={Math.round(px * 0.58)} role="img" aria-label={`${simple.icon.title} logo`}>
+          <path d={simple.icon.path} fill={simple.fg} />
         </svg>
       </span>
     );
   }
 
-  const Coin = !stock ? COIN_LOGOS[ticker] : undefined;
-  if (Coin) {
+  const coin = !stock ? COIN_IMAGES[ticker] : undefined;
+  if (coin) {
     return (
-      <span className={cn("inline-grid shrink-0 place-items-center overflow-hidden", shape, dims.box)}>
-        <Coin variant="branded" size={dims.px} className="size-full" aria-label={`${ticker} logo`} />
+      <span style={tile}>
+        <Image src={`/logos/coins/${coin}`} alt={`${ticker} logo`} width={px} height={px} unoptimized={coin.endsWith(".svg")} style={{ width: px, height: px, objectFit: "cover" }} />
       </span>
     );
   }
 
-  const hue = hueOf(ticker);
   return (
     <span
       aria-hidden
-      className={cn("inline-grid shrink-0 place-items-center border font-mono font-semibold tracking-tight select-none", shape, dims.box, dims.text)}
-      style={{ background: `oklch(0.93 0.05 ${hue})`, borderColor: `oklch(0.8 0.08 ${hue})`, color: `oklch(0.35 0.09 ${hue})` }}
+      style={{
+        ...tile,
+        background: stock ? "#191919" : "#eeece5",
+        color: stock ? "#fbfaf5" : "#191919",
+        fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+        fontWeight: 600,
+        fontSize: Math.max(7, Math.round(px * (ticker.length > 3 ? 0.24 : 0.3))),
+        letterSpacing: "-0.02em",
+      }}
     >
-      {ticker.slice(0, ticker.length > 4 ? 3 : 4)}
+      {ticker.slice(0, 4)}
     </span>
   );
 }
 
-export function ChainLogo({ chain, className }: { chain: string; className?: string }) {
-  const Logo = CHAIN_LOGOS[chain.toLowerCase()];
-  if (!Logo) return null;
-  return <Logo variant="branded" className={cn("rounded-full", className)} aria-label={`${chain} network`} />;
+export function ChainLogo({ chain, className, size = 20 }: { chain: string; className?: string; size?: number }) {
+  const id = chain.toLowerCase();
+  if (!CHAIN_IMAGES.has(id)) return null;
+  return <Image src={`/logos/chains/${id}.png`} alt={`${chain} network`} width={size} height={size} className={cn("rounded-full", className)} style={{ width: size, height: size }} />;
 }
 
 export function TokenAvatar({
@@ -150,13 +145,14 @@ export function TokenAvatar({
   size?: TokenAvatarSize;
   className?: string;
 }) {
-  const hasChain = chain ? Boolean(CHAIN_LOGOS[chain.toLowerCase()]) : false;
+  const badge = Math.max(10, Math.round(SIZES[size] * 0.42));
+  const hasChain = chain ? CHAIN_IMAGES.has(chain.toLowerCase()) : false;
   return (
     <span className={cn("relative inline-flex shrink-0", className)}>
       <Mark symbol={symbol} category={category} size={size} />
       {hasChain && chain ? (
-        <span className="absolute -right-0.5 -bottom-0.5 rounded-full bg-card p-px ring-1 ring-card">
-          <ChainLogo chain={chain} className={SIZES[size].badge} />
+        <span style={{ position: "absolute", right: -3, bottom: -3, borderRadius: "50%", background: "#ffffff", padding: 1, lineHeight: 0 }}>
+          <ChainLogo chain={chain} size={badge} />
         </span>
       ) : null}
     </span>
@@ -164,19 +160,13 @@ export function TokenAvatar({
 }
 
 /** Two overlapping marks: collateral and the asset borrowed against it (or a swap pair). */
-export function TokenPair({
-  from,
-  to,
-  size = "md",
-}: {
-  from: { symbol: string; category?: string };
-  to: { symbol: string; category?: string };
-  size?: TokenAvatarSize;
-}) {
+export function TokenPair({ from, to, size = "md" }: { from: { symbol: string; category?: string }; to: { symbol: string; category?: string }; size?: TokenAvatarSize }) {
   return (
-    <span className="inline-flex items-center">
+    <span style={{ display: "inline-flex", alignItems: "center" }}>
       <TokenAvatar symbol={from.symbol} category={from.category} size={size} />
-      <TokenAvatar symbol={to.symbol} category={to.category} size={size} className="-ml-2.5 drop-shadow-[-2px_0_0_var(--card)]" />
+      <span style={{ marginLeft: -Math.round(SIZES[size] * 0.28), filter: "drop-shadow(-2px 0 0 #ffffff)" }}>
+        <TokenAvatar symbol={to.symbol} category={to.category} size={size} />
+      </span>
     </span>
   );
 }
