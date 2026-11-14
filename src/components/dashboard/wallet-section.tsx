@@ -1,11 +1,12 @@
 "use client";
 
-import { Link2, Loader2 } from "lucide-react";
+import { Badge, Box, Button, HStack, Stack, Text } from "@chakra-ui/react";
+import { Link2 } from "lucide-react";
+import { ChainLogo } from "@/components/app/token-avatar";
 import { LENDING_CONTRACT_ID, NETWORK } from "@/lib/config";
 import { useEvmWallet } from "@/lib/wallets/evm";
 import { useNearWallet } from "@/lib/wallets/near";
 import { useSolanaWallet } from "@/lib/wallets/solana";
-import { cn } from "@/lib/utils";
 
 function short(value: string): string {
   return value.length > 18 ? `${value.slice(0, 8)}…${value.slice(-6)}` : value;
@@ -14,105 +15,55 @@ function short(value: string): string {
 /** Lending network badge: the live NEAR testnet contract. */
 export function ModeBadge({ className }: { className?: string }) {
   return (
-    <span
-      title={`Lending reads and writes ${LENDING_CONTRACT_ID} on NEAR ${NETWORK}`}
-      className={cn(
-        "inline-flex max-w-full items-center gap-1.5 rounded-full border border-emerald-600/30 bg-emerald-600/8 px-2.5 py-1 font-mono text-[10px] text-emerald-800 dark:text-emerald-300",
-        className,
-      )}
-    >
-      <Link2 className="size-3 shrink-0" aria-hidden />
-      <span className="truncate">NEAR {NETWORK} · {LENDING_CONTRACT_ID}</span>
-    </span>
+    <Badge className={className} colorPalette="green" variant="subtle" size="md" borderRadius="full" gap="1.5" fontFamily="mono" title={`Lending reads and writes ${LENDING_CONTRACT_ID} on NEAR ${NETWORK}`}>
+      <Link2 size={12} aria-hidden />
+      NEAR {NETWORK}
+    </Badge>
   );
 }
 
-function WalletRow({
-  chain,
-  hint,
-  address,
-  busy,
-  onConnect,
-  onDisconnect,
-}: {
-  chain: string;
-  hint: string;
-  address: string | null;
-  busy?: boolean;
-  onConnect: () => void;
-  onDisconnect: () => void;
-}) {
+function WalletRow({ chain, logo, hint, address, busy, onConnect, onDisconnect }: { chain: string; logo: string; hint: string; address: string | null; busy?: boolean; onConnect: () => void; onDisconnect: () => void }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex min-w-0 flex-col">
-        <span className="text-[12px] font-medium text-foreground/85">{chain}</span>
-        <span className="truncate text-[10px] text-muted-foreground">{hint}</span>
-      </div>
+    <HStack justify="space-between" gap="3" py="2">
+      <HStack gap="2.5" minW="0">
+        <ChainLogo chain={logo} className="size-7" />
+        <Stack gap="0" minW="0">
+          <Text textStyle="sm" fontWeight="semibold">
+            {chain}
+          </Text>
+          <Text textStyle="xs" color="fg.muted" truncate>
+            {address ? short(address) : hint}
+          </Text>
+        </Stack>
+      </HStack>
       {address ? (
-        <button
-          type="button"
-          onClick={onDisconnect}
-          title={`${address} · click to disconnect`}
-          aria-label={`Disconnect ${chain} wallet ${address}`}
-          className="max-w-[7.5rem] shrink-0 truncate rounded-full border border-foreground/15 px-2.5 py-1 font-mono text-[10.5px] text-foreground/75 transition-colors hover:border-foreground/35 hover:text-foreground"
-        >
-          {short(address)}
-        </button>
+        <Button size="xs" variant="outline" borderRadius="full" onClick={onDisconnect}>
+          Disconnect
+        </Button>
       ) : (
-        <button
-          type="button"
-          onClick={onConnect}
-          disabled={busy}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-foreground/15 px-2.5 py-1 text-[11px] font-medium text-foreground/80 transition-colors hover:border-foreground/35 hover:text-foreground disabled:opacity-60"
-        >
-          {busy ? <Loader2 className="size-3 animate-spin" aria-hidden /> : null}
+        <Button size="xs" variant="solid" colorPalette="gray" bg="ink" color="white" borderRadius="full" loading={busy} onClick={onConnect}>
           Connect
-        </button>
+        </Button>
       )}
-    </div>
+    </HStack>
   );
 }
 
-/** NEAR (lending network), EVM and Solana (swap origins) wallets, network label and mode badge. */
-export function WalletSection({ className }: { className?: string }) {
+/** NEAR (lending), EVM and Solana (swap deposits) wallets. */
+export function WalletSection() {
   const near = useNearWallet();
   const evm = useEvmWallet();
   const solana = useSolanaWallet();
-
   return (
-    <div className={cn("flex flex-col gap-2.5", className)}>
-      <div className="flex items-center justify-between px-0.5 font-mono text-[9.5px] tracking-[0.1em] text-muted-foreground uppercase">
-        <span>Wallets</span>
-        <span>NEAR {NETWORK}</span>
-      </div>
-      {near.ready ? (
-        <WalletRow
-          chain="NEAR"
-          hint="Lending network"
-          address={near.accountId}
-          busy={near.connecting}
-          onConnect={() => void near.signIn()}
-          onDisconnect={() => void near.signOut()}
-        />
-      ) : (
-        <div className="h-8 animate-pulse rounded-full bg-foreground/5" aria-hidden />
-      )}
-      {near.error ? <p className="text-[10.5px] text-destructive">{near.error}</p> : null}
-      <WalletRow
-        chain="EVM"
-        hint={evm.chainId ? `Swaps · chain ${evm.chainId}` : "Swap origin"}
-        address={evm.address}
-        onConnect={() => void evm.connect()}
-        onDisconnect={() => void evm.disconnect()}
-      />
-      <WalletRow
-        chain="Solana"
-        hint="Swap origin"
-        address={solana.address}
-        onConnect={() => void solana.connect()}
-        onDisconnect={() => void solana.disconnect()}
-      />
-      <ModeBadge className="mt-0.5 self-start" />
-    </div>
+    <Box>
+      <WalletRow chain="NEAR testnet" logo="near" hint="Signs lending actions" address={near.accountId} busy={near.connecting || !near.ready} onConnect={() => void near.signIn()} onDisconnect={() => void near.signOut()} />
+      {near.error ? (
+        <Text textStyle="xs" color="red.600">
+          {near.error}
+        </Text>
+      ) : null}
+      <WalletRow chain="EVM" logo="eth" hint="Ethereum, Base, BNB Chain… swap deposits" address={evm.address} onConnect={() => void evm.connect()} onDisconnect={() => void evm.disconnect()} />
+      <WalletRow chain="Solana" logo="sol" hint="Swap deposits" address={solana.address} onConnect={() => void solana.connect()} onDisconnect={() => void solana.disconnect()} />
+    </Box>
   );
 }

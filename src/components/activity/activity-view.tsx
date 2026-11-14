@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Badge, Button, Container, HStack, Stack } from "@chakra-ui/react";
 import { AccountNotice } from "@/components/shared/account-summary";
 import { PageHeader, Section, SkeletonRows } from "@/components/shared/bits";
 import { useLending } from "@/components/shared/lending-provider";
 import { ModeBanner } from "@/components/shared/mode-banner";
-import { cn } from "@/lib/utils";
 import type { ActivityItem } from "@/types/protocol";
 import { ActivityList } from "./activity-list";
 import { useActivityItems } from "./use-activity";
@@ -40,52 +40,44 @@ export function ActivityView() {
   const loading = lending.accountState === "loading" && lending.activity.length === 0;
 
   return (
-    <>
+    <Container maxW="6xl" px="4" py={{ base: "6", md: "10" }}>
       <PageHeader
         title="Activity"
-        description="Deposits, withdrawals, borrows, repayments and liquidations from the NEAR testnet lending contract, plus the 1Click swaps started in this browser."
+        description="Deposits, withdrawals, borrows, repayments and liquidations from the NEAR testnet lending contract, plus the NEAR Intents swaps started in this browser."
       />
       <ModeBanner />
-      <div className="mb-3">
+      <Stack gap="4">
         <AccountNotice />
-      </div>
-
-      <Section
-        title="Unified feed"
-        description={
-          lending.mode === "near"
-            ? "Lending rows come from get_account_activity (last 32 per account) and link to their block. Swaps link to the NEAR Intents explorer: search the deposit address."
-            : "Lending rows are simulated and have no transaction. Swaps link to the NEAR Intents explorer: search the deposit address."
-        }
-      >
-        <div role="group" aria-label="Filter by kind" className="mb-2 flex flex-wrap gap-1.5">
-          {FILTERS.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              aria-pressed={filter === entry.id}
-              onClick={() => setFilter(entry.id)}
-              className={cn(
-                "rounded-full border px-3 py-1 text-[12px] transition-colors",
-                filter === entry.id
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-foreground/15 text-foreground/70 hover:border-foreground/35 hover:text-foreground",
-              )}
-            >
-              {entry.label}
-              <span className="ml-1.5 font-mono text-[10.5px] opacity-70">{counts.get(entry.id) ?? 0}</span>
-            </button>
-          ))}
-        </div>
-        {loading ? (
-          <SkeletonRows rows={4} />
-        ) : (
-          <ActivityList
-            items={visible}
-            empty={filter === "all" ? "No activity yet. Deposit collateral on the Borrow page or start a swap." : `No ${active.label.toLowerCase()} yet.`}
-          />
-        )}
-      </Section>
-    </>
+        <Section title="History">
+          <HStack gap="1.5" wrap="wrap" mb="3" role="group" aria-label="Filter by kind">
+            {FILTERS.map((entry) => (
+              <Button
+                key={entry.id}
+                size="xs"
+                borderRadius="full"
+                variant={filter === entry.id ? "solid" : "outline"}
+                bg={filter === entry.id ? "ink" : undefined}
+                color={filter === entry.id ? "white" : undefined}
+                aria-pressed={filter === entry.id}
+                onClick={() => setFilter(entry.id)}
+              >
+                {entry.label}
+                <Badge size="xs" variant="subtle" borderRadius="full" colorPalette="gray">
+                  {counts.get(entry.id) ?? 0}
+                </Badge>
+              </Button>
+            ))}
+          </HStack>
+          {loading ? (
+            <SkeletonRows rows={4} />
+          ) : (
+            <ActivityList
+              items={visible}
+              empty={filter === "all" ? "No activity yet. Deposit collateral on the Borrow page or start a swap." : `No ${active.label.toLowerCase()} yet.`}
+            />
+          )}
+        </Section>
+      </Stack>
+    </Container>
   );
 }

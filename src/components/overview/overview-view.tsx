@@ -1,17 +1,17 @@
 "use client";
 
-import Link from "next/link";
+import NextLink from "next/link";
+import { AbsoluteCenter, Badge, Box, Button, Card, Container, Flex, Grid, Heading, HStack, LinkBox, LinkOverlay, Progress, ProgressCircle, SimpleGrid, Stack, Stat, Text } from "@chakra-ui/react";
 import { ArrowRight, Wallet } from "lucide-react";
 import { ActivityList } from "@/components/activity/activity-list";
 import { useActivityItems } from "@/components/activity/use-activity";
 import { TokenAvatar, TokenPair } from "@/components/app/token-avatar";
 import { MarketNotice, usePortfolioTotals } from "@/components/shared/account-summary";
-import { Section, SkeletonRows } from "@/components/shared/bits";
-import { amountOf, bandTone, TONE_TEXT } from "@/components/shared/format";
+import { Section, SkeletonRows, TONE_PALETTE } from "@/components/shared/bits";
+import { amountOf, bandTone } from "@/components/shared/format";
 import { useLending } from "@/components/shared/lending-provider";
 import { ModeBanner } from "@/components/shared/mode-banner";
 import { formatHealthFactor, formatUsdWad, HEALTH_BAND_LABEL, healthBand, WAD } from "@/lib/risk";
-import { cn } from "@/lib/utils";
 import { useNearWallet } from "@/lib/wallets/near";
 
 const JOURNEYS = [
@@ -20,107 +20,113 @@ const JOURNEYS = [
   { href: "/swap", from: { symbol: "PEPE" }, to: { symbol: "TSLA", category: "stock" }, title: "Swap across chains", body: "PEPE on Ethereum to Tesla on BNB Chain." },
 ];
 
-/** Semicircle gauge: health factor 1.0 (left, liquidation) to 3.0+ (right). */
 function HealthGauge({ value }: { value: bigint | null }) {
   const band = healthBand(value);
-  const hf = value === null ? 3 : Math.min(3, Number(value * BigInt(100) / WAD) / 100);
-  const share = value === null ? 1 : Math.max(0, Math.min(1, (hf - 1) / 2));
-  const arc = 125.66; // half circumference for r = 40
+  const palette = TONE_PALETTE[bandTone(band)];
+  const hf = value === null ? 3 : Math.min(3, Number((value * BigInt(100)) / WAD) / 100);
+  const pct = value === null ? 100 : Math.max(0, Math.min(100, ((hf - 1) / 2) * 100));
   return (
-    <div className="flex flex-col items-center">
-      <svg viewBox="0 0 100 56" className="w-40" role="img" aria-label={`Health factor ${formatHealthFactor(value)}`}>
-        <path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="8" strokeLinecap="round" />
-        <path
-          d="M10 50 A40 40 0 0 1 90 50"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={arc}
-          strokeDashoffset={arc * (1 - share)}
-          className={cn("transition-[stroke-dashoffset] duration-700", TONE_TEXT[bandTone(band)])}
-        />
-      </svg>
-      <span className={cn("-mt-7 font-mono text-[26px] tabular-nums", TONE_TEXT[bandTone(band)])}>{formatHealthFactor(value)}</span>
-      <span className="mt-1 text-[11.5px] text-muted-foreground">Health factor · {HEALTH_BAND_LABEL[band]}</span>
-    </div>
+    <Stack align="center" gap="2">
+      <ProgressCircle.Root value={pct} size="xl" colorPalette={palette}>
+        <ProgressCircle.Circle css={{ "--size": "136px", "--thickness": "10px" }}>
+          <ProgressCircle.Track stroke="bg.muted" />
+          <ProgressCircle.Range strokeLinecap="round" />
+        </ProgressCircle.Circle>
+        <AbsoluteCenter>
+          <Text fontFamily="mono" textStyle="2xl">
+            {formatHealthFactor(value)}
+          </Text>
+        </AbsoluteCenter>
+      </ProgressCircle.Root>
+      <Badge colorPalette={palette} variant="subtle" borderRadius="full">
+        Health factor · {HEALTH_BAND_LABEL[band]}
+      </Badge>
+    </Stack>
   );
 }
 
-function Hero() {
-  const lending = useLending();
+function ConnectHero() {
   const wallet = useNearWallet();
-  const totals = usePortfolioTotals();
-
-  if (!lending.walletAccountId) {
-    return (
-      <div className="radiri-rise relative overflow-hidden rounded-[28px] border border-foreground/10 bg-card px-6 py-8 sm:px-10">
-        <div className="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-[radial-gradient(circle,rgba(79,152,67,0.18),transparent_65%)]" aria-hidden />
-        <div className="pointer-events-none absolute -bottom-28 left-10 size-72 rounded-full bg-[radial-gradient(circle,rgba(204,0,0,0.12),transparent_65%)]" aria-hidden />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-md">
-            <h1 className="font-display text-[34px] leading-[1.05] sm:text-[44px]">Your meme coins, working as collateral.</h1>
-            <p className="mt-2 text-[14px] text-muted-foreground">Connect a NEAR testnet wallet to see your positions, mint test tokens and borrow.</p>
-            <button
-              type="button"
-              onClick={() => void wallet.signIn()}
-              disabled={!wallet.ready || wallet.connecting}
-              className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-foreground px-5 text-[14px] font-semibold text-background transition-colors hover:bg-foreground/85 disabled:opacity-50"
-            >
-              <Wallet className="size-4" aria-hidden />
+  return (
+    <Card.Root variant="outline" bg="bg.panel" borderRadius="panel" boxShadow="panel" overflow="hidden" className="radiri-rise">
+      <Card.Body p={{ base: "6", md: "10" }}>
+        <Flex direction={{ base: "column", md: "row" }} align={{ md: "center" }} justify="space-between" gap="8">
+          <Box maxW="lg">
+            <Heading as="h1" fontFamily="display" fontWeight="normal" fontSize={{ base: "4xl", md: "6xl" }} lineHeight="1" letterSpacing="-0.03em">
+              Your meme coins, working as collateral.
+            </Heading>
+            <Text mt="3" color="fg.muted">
+              Connect a NEAR testnet wallet to see your positions, mint test tokens and borrow.
+            </Text>
+            <Button mt="6" size="lg" borderRadius="full" bg="ink" color="white" _hover={{ bg: "#2a2a2a" }} onClick={() => void wallet.signIn()} disabled={!wallet.ready || wallet.connecting}>
+              <Wallet size={18} aria-hidden />
               Connect NEAR wallet
-            </button>
-          </div>
-          <div className="flex items-center gap-3 sm:flex-col">
+            </Button>
+          </Box>
+          <Stack gap="4" align="center">
             <TokenPair from={{ symbol: "PEPE" }} to={{ symbol: "AAPL", category: "stock" }} size="xl" />
             <TokenPair from={{ symbol: "SHIB" }} to={{ symbol: "NVDA", category: "stock" }} size="xl" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+          </Stack>
+        </Flex>
+      </Card.Body>
+    </Card.Root>
+  );
+}
 
+function PositionHero() {
+  const lending = useLending();
+  const totals = usePortfolioTotals();
+  const used = totals?.limitUsedBps ?? 0;
+  const metrics: [string, string][] = [
+    ["Collateral", totals ? formatUsdWad(totals.collateralWad, { compact: true }) : "–"],
+    ["Borrowed", totals ? formatUsdWad(totals.debtWad, { compact: true }) : "–"],
+    ["Can still borrow", totals ? formatUsdWad(totals.availableWad, { compact: true }) : "–"],
+    ["Open positions", totals ? String(totals.positions) : "–"],
+  ];
   return (
-    <div className="radiri-rise grid gap-3 rounded-[28px] border border-foreground/10 bg-card p-6 sm:grid-cols-[1fr_auto] sm:p-8">
-      <div className="flex flex-col gap-5">
-        <div>
-          <span className="text-[12.5px] text-muted-foreground">Net position</span>
-          <div className="font-display text-[44px] leading-none tabular-nums sm:text-[56px]">{totals ? formatUsdWad(totals.netWad) : "–"}</div>
-          <span className="mt-1 block font-mono text-[11.5px] text-muted-foreground">{lending.walletAccountId}</span>
-        </div>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
-          {[
-            ["Collateral", totals ? formatUsdWad(totals.collateralWad, { compact: true }) : "–"],
-            ["Borrowed", totals ? formatUsdWad(totals.debtWad, { compact: true }) : "–"],
-            ["Can still borrow", totals ? formatUsdWad(totals.availableWad, { compact: true }) : "–"],
-            ["Positions", totals ? String(totals.positions) : "–"],
-          ].map(([label, value]) => (
-            <div key={label}>
-              <dt className="text-[11.5px] text-muted-foreground">{label}</dt>
-              <dd className="font-mono text-[18px] tabular-nums">{value}</dd>
-            </div>
-          ))}
-        </dl>
-        <div>
-          <div className="mb-1 flex justify-between text-[11.5px] text-muted-foreground">
-            <span>Borrow limit used</span>
-            <span className="font-mono">{totals?.limitUsedBps === null || !totals ? "0%" : `${(totals.limitUsedBps / 100).toFixed(1)}%`}</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-foreground/8">
-            <div
-              className={cn(
-                "h-full rounded-full transition-[width] duration-700",
-                (totals?.limitUsedBps ?? 0) >= 9000 ? "bg-destructive" : (totals?.limitUsedBps ?? 0) >= 7000 ? "bg-amber-500" : "bg-emerald-600",
-              )}
-              style={{ width: `${Math.min(100, (totals?.limitUsedBps ?? 0) / 100)}%` }}
-            />
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center justify-center sm:border-l sm:border-foreground/8 sm:pl-8">
-        <HealthGauge value={totals?.healthFactorWad ?? null} />
-      </div>
-    </div>
+    <Card.Root variant="outline" bg="bg.panel" borderRadius="panel" boxShadow="panel" className="radiri-rise">
+      <Card.Body p={{ base: "6", md: "8" }}>
+        <Grid templateColumns={{ base: "1fr", md: "1fr auto" }} gap="8" alignItems="center">
+          <Stack gap="6">
+            <Stat.Root>
+              <Stat.Label color="fg.muted">Net position</Stat.Label>
+              <Stat.ValueText fontFamily="display" fontWeight="normal" fontSize={{ base: "5xl", md: "6xl" }} lineHeight="1">
+                {totals ? formatUsdWad(totals.netWad) : "–"}
+              </Stat.ValueText>
+              <Stat.HelpText fontFamily="mono" color="fg.muted">
+                {lending.walletAccountId}
+              </Stat.HelpText>
+            </Stat.Root>
+            <SimpleGrid columns={{ base: 2, sm: 4 }} gap="4">
+              {metrics.map(([label, value]) => (
+                <Stat.Root key={label}>
+                  <Stat.Label color="fg.muted" textStyle="xs">
+                    {label}
+                  </Stat.Label>
+                  <Stat.ValueText fontFamily="mono" textStyle="xl" fontWeight="medium">
+                    {value}
+                  </Stat.ValueText>
+                </Stat.Root>
+              ))}
+            </SimpleGrid>
+            <Progress.Root value={Math.min(100, used / 100)} size="sm" shape="full" colorPalette={used >= 9000 ? "red" : used >= 7000 ? "orange" : "green"}>
+              <HStack justify="space-between" mb="1.5">
+                <Progress.Label textStyle="xs" color="fg.muted" fontWeight="normal">
+                  Borrow limit used
+                </Progress.Label>
+                <Progress.ValueText fontFamily="mono" textStyle="xs" />
+              </HStack>
+              <Progress.Track bg="bg.muted">
+                <Progress.Range />
+              </Progress.Track>
+            </Progress.Root>
+          </Stack>
+          <Box borderLeftWidth={{ md: "1px" }} borderColor="border.muted" pl={{ md: "8" }}>
+            <HealthGauge value={totals?.healthFactorWad ?? null} />
+          </Box>
+        </Grid>
+      </Card.Body>
+    </Card.Root>
   );
 }
 
@@ -129,67 +135,95 @@ function Positions() {
   const risk = lending.risk;
   if (lending.accountState === "loading" && !lending.account) return <SkeletonRows rows={3} />;
   if (!risk || (risk.collateral.length === 0 && risk.debt.length === 0)) {
-    return <p className="py-3 text-[13px] text-muted-foreground">No open positions yet. Start on the Borrow page.</p>;
+    return (
+      <Text py="4" textStyle="sm" color="fg.muted">
+        No open positions yet. Start on the Borrow page.
+      </Text>
+    );
   }
   const rows = [...risk.collateral.map((line) => ({ kind: "Collateral", ...line })), ...risk.debt.map((line) => ({ kind: "Borrowed", ...line }))];
   return (
-    <ul className="flex flex-col gap-1">
+    <Stack gap="1">
       {rows.map((row) => {
         const asset = lending.assetIndex.get(row.tokenId);
         return (
-          <li key={`${row.kind}-${row.tokenId}`} className="flex items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-foreground/4">
+          <HStack key={`${row.kind}-${row.tokenId}`} gap="3" px="2" py="2.5" borderRadius="lg" _hover={{ bg: "bg.subtle" }}>
             <TokenAvatar symbol={asset?.config.symbol ?? "?"} category={asset?.config.category} size="md" />
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span className="text-[14px] font-semibold">{asset?.config.symbol ?? row.tokenId}</span>
-              <span className={cn("text-[11.5px]", row.kind === "Borrowed" ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>{row.kind}</span>
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="font-mono text-[13.5px] tabular-nums">{asset ? amountOf(asset, row.amount, 4) : row.amount.toString()}</span>
-              <span className="font-mono text-[11.5px] text-muted-foreground tabular-nums">{formatUsdWad(row.valueWad)}</span>
-            </div>
-          </li>
+            <Stack gap="0" flex="1" minW="0">
+              <Text fontWeight="semibold" textStyle="sm">
+                {asset?.config.symbol ?? row.tokenId}
+              </Text>
+              <Badge alignSelf="flex-start" size="xs" variant="subtle" colorPalette={row.kind === "Borrowed" ? "orange" : "gray"} borderRadius="full">
+                {row.kind}
+              </Badge>
+            </Stack>
+            <Stack gap="0" align="flex-end">
+              <Text fontFamily="mono" textStyle="sm">
+                {asset ? amountOf(asset, row.amount, 4) : row.amount.toString()}
+              </Text>
+              <Text fontFamily="mono" textStyle="xs" color="fg.muted">
+                {formatUsdWad(row.valueWad)}
+              </Text>
+            </Stack>
+          </HStack>
         );
       })}
-    </ul>
+    </Stack>
   );
 }
 
 export function OverviewView() {
+  const lending = useLending();
   const items = useActivityItems();
   return (
-    <div className="flex flex-col gap-4">
+    <Container maxW="6xl" px="4" py={{ base: "6", md: "10" }}>
       <ModeBanner />
-      <MarketNotice />
-      <Hero />
+      <Stack gap="5">
+        <MarketNotice />
+        {lending.walletAccountId ? <PositionHero /> : <ConnectHero />}
 
-      <div className="grid gap-3 md:grid-cols-3">
-        {JOURNEYS.map((journey, index) => (
-          <Link
-            key={journey.href}
-            href={journey.href}
-            className="radiri-rise group flex flex-col gap-3 rounded-[24px] border border-foreground/10 bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-[0_20px_50px_-30px_rgba(25,25,25,0.5)]"
-            style={{ animationDelay: `${80 + index * 60}ms` }}
-          >
-            <span className="flex items-center justify-between">
-              <TokenPair from={journey.from} to={journey.to} size="lg" />
-              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" aria-hidden />
-            </span>
-            <span>
-              <span className="block text-[15px] font-semibold tracking-tight">{journey.title}</span>
-              <span className="block text-[12.5px] text-muted-foreground">{journey.body}</span>
-            </span>
-          </Link>
-        ))}
-      </div>
+        <SimpleGrid columns={{ base: 1, md: 3 }} gap="4">
+          {JOURNEYS.map((journey, index) => (
+            <LinkBox
+              key={journey.href}
+              as="article"
+              className="radiri-rise"
+              style={{ animationDelay: `${80 + index * 60}ms` }}
+              bg="bg.panel"
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="panel"
+              p="5"
+              transition="all 0.2s"
+              _hover={{ transform: "translateY(-2px)", boxShadow: "lift", borderColor: "border.emphasized" }}
+            >
+              <Flex justify="space-between" align="center" mb="4">
+                <TokenPair from={journey.from} to={journey.to} size="lg" />
+                <ArrowRight size={16} color="#8a8a86" aria-hidden />
+              </Flex>
+              <LinkOverlay asChild>
+                <NextLink href={journey.href}>
+                  <Text fontWeight="semibold" textStyle="md" letterSpacing="-0.01em">
+                    {journey.title}
+                  </Text>
+                </NextLink>
+              </LinkOverlay>
+              <Text textStyle="sm" color="fg.muted">
+                {journey.body}
+              </Text>
+            </LinkBox>
+          ))}
+        </SimpleGrid>
 
-      <div className="grid items-start gap-3 lg:grid-cols-2">
-        <Section title="Active positions" action={<Link href="/portfolio" className="text-xs text-muted-foreground hover:text-foreground">Portfolio →</Link>}>
-          <Positions />
-        </Section>
-        <Section title="Recent activity" action={<Link href="/activity" className="text-xs text-muted-foreground hover:text-foreground">All activity →</Link>}>
-          <ActivityList items={items.slice(0, 6)} empty="No activity yet." />
-        </Section>
-      </div>
-    </div>
+        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap="4" alignItems="start">
+          <Section title="Active positions" action={<NextLink href="/portfolio" style={{ fontSize: 12, color: "#5b5b5b" }}>Portfolio →</NextLink>}>
+            <Positions />
+          </Section>
+          <Section title="Recent activity" action={<NextLink href="/activity" style={{ fontSize: 12, color: "#5b5b5b" }}>All activity →</NextLink>}>
+            <ActivityList items={items.slice(0, 6)} empty="No activity yet." />
+          </Section>
+        </Grid>
+      </Stack>
+    </Container>
   );
 }

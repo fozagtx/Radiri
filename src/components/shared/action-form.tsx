@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Box, Button, Stack, Text } from "@chakra-ui/react";
 import { type ExecutionResult, LendingActionError } from "@/lib/lending";
 import { type LendingActionKind, maxActionAmount, previewAction, tryParseUnits } from "@/lib/risk";
 import { useNearWallet } from "@/lib/wallets/near";
@@ -88,9 +87,10 @@ export function ActionForm({
   const copy = ACTION_COPY[kind];
 
   return (
-    <form
-      className="flex flex-col gap-3"
-      onSubmit={(event) => {
+    <Stack
+      as="form"
+      gap="4"
+      onSubmit={(event: React.FormEvent) => {
         event.preventDefault();
         void submit();
       }}
@@ -116,43 +116,51 @@ export function ActionForm({
       {preview ? <ReasonList reasons={preview.reasons} /> : null}
 
       {needsWallet ? (
-        <Button type="button" variant="outline" onClick={() => void wallet.signIn()} disabled={wallet.connecting}>
+        <Button type="button" size="lg" borderRadius="xl" variant="outline" onClick={() => void wallet.signIn()} disabled={wallet.connecting}>
           Connect NEAR wallet to sign
         </Button>
       ) : (
-        <Button type="submit" size="lg" disabled={!preview?.ok || submitting} className="w-full">
-          {submitting ? <Loader2 className="animate-spin" aria-hidden /> : null}
-          {submitting ? "Waiting for wallet…" : `${copy.verb} ${symbol}`}
+        <Button
+          type="submit"
+          size="lg"
+          w="full"
+          borderRadius="xl"
+          bg="ink"
+          color="white"
+          _hover={{ bg: "#2a2a2a" }}
+          disabled={!preview?.ok || submitting}
+          loading={submitting}
+          loadingText="Waiting for wallet…"
+        >
+          {`${copy.verb} ${symbol}`}
         </Button>
       )}
 
       {!needsWallet ? (
-        <p className="text-[11px] text-muted-foreground">
+        <Text textStyle="xs" color="fg.muted">
           Your wallet signs every step in one prompt: a one-time 0.1 NEAR storage deposit if this account is new to the
           contract{kind === "borrow" || kind.startsWith("withdraw") ? ", a token storage deposit if you have never held this token," : ""} then
           the {kind === "deposit_collateral" || kind === "supply" || kind === "repay" ? "ft_transfer_call (1 yoctoNEAR)" : `${kind} call (1 yoctoNEAR, 300 TGas)`}.
-        </p>
+        </Text>
       ) : null}
 
-      <div aria-live="polite">
+      <Box aria-live="polite">
         {outcome?.kind === "success" ? (
           <Note tone="good">
-            <p className="font-medium">
-              {copy.done} on NEAR testnet
-            </p>
+            <Text fontWeight="semibold">{copy.done} on NEAR testnet</Text>
             {outcome.result.notes.map((note) => (
-              <p key={note}>{note}</p>
+              <Text key={note}>{note}</Text>
             ))}
             <TxLinks hashes={outcome.result.txHashes} urls={outcome.result.explorerUrls} />
           </Note>
         ) : null}
         {outcome?.kind === "error" ? (
           <Note tone="bad">
-            <p>{outcome.message}</p>
+            <Text>{outcome.message}</Text>
             {outcome.error ? <TxLinks hashes={outcome.error.txHashes} urls={outcome.error.explorerUrls} /> : null}
           </Note>
         ) : null}
-      </div>
-    </form>
+      </Box>
+    </Stack>
   );
 }

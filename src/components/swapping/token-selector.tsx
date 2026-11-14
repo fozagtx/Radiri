@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Box, HStack, IconButton, Input, InputGroup, SegmentGroup, Stack, Text } from "@chakra-ui/react";
 import { ArrowLeft, Search } from "lucide-react";
 import { TokenAvatar } from "@/components/app/token-avatar";
 import { chainName } from "@/lib/intents/chains";
-import { cn } from "@/lib/utils";
 import type { CatalogAsset } from "@/types/protocol";
 
 export type SwapCategory = "meme" | "stock";
@@ -20,7 +20,7 @@ export function swappable(assets: CatalogAsset[]): CatalogAsset[] {
   return assets.filter((asset) => asset.category === "meme" || asset.category === "stock");
 }
 
-/** Full-card token list: search, meme / stock tabs, logos with chain badges, live 1Click prices. */
+/** Full-card token list: search, meme / stock segments, logos with chain badges, live prices. */
 export function TokenSelector({
   title,
   assets,
@@ -48,76 +48,56 @@ export function TokenSelector({
   }, [assets, category, query]);
 
   return (
-    <div className="radiri-rise flex max-h-[min(640px,80vh)] flex-col">
-      <div className="flex items-center gap-2 px-2 pt-1 pb-3">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Back to swap"
-          className="grid size-9 place-items-center rounded-full text-foreground/70 transition-colors hover:bg-foreground/6 hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" aria-hidden />
-        </button>
-        <h2 className="text-[15px] font-semibold tracking-tight">{title}</h2>
-      </div>
-
-      <label className="mx-2 flex items-center gap-2 rounded-2xl border border-foreground/10 bg-background px-3 py-2.5 focus-within:border-foreground/35">
-        <Search className="size-4 text-muted-foreground" aria-hidden />
-        <input
-          autoFocus
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search name, ticker or network"
-          className="w-full bg-transparent text-[14px] outline-none placeholder:text-muted-foreground"
-        />
-      </label>
-
-      <div role="tablist" aria-label="Asset type" className="mx-2 mt-3 grid grid-cols-2 gap-1 rounded-full bg-foreground/5 p-1">
-        {(["meme", "stock"] as const).map((id) => (
-          <button
-            key={id}
-            role="tab"
-            type="button"
-            aria-selected={category === id}
-            onClick={() => setCategory(id)}
-            className={cn(
-              "rounded-full py-1.5 text-[13px] font-medium transition-colors",
-              category === id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-            )}
+    <Stack gap="3" maxH="min(640px, 80vh)" className="radiri-rise">
+      <HStack gap="2">
+        <IconButton aria-label="Back to swap" variant="ghost" borderRadius="full" size="sm" onClick={onClose}>
+          <ArrowLeft size={18} />
+        </IconButton>
+        <Text fontWeight="semibold" textStyle="md">
+          {title}
+        </Text>
+      </HStack>
+      <InputGroup startElement={<Search size={16} />}>
+        <Input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, ticker or network" size="lg" borderRadius="xl" />
+      </InputGroup>
+      <SegmentGroup.Root value={category} onValueChange={(details) => setCategory(details.value === "stock" ? "stock" : "meme")} size="md" w="full">
+        <SegmentGroup.Indicator />
+        <SegmentGroup.Items flex="1" justifyContent="center" items={[{ value: "meme", label: "Meme coins" }, { value: "stock", label: "Tokenized stocks" }]} />
+      </SegmentGroup.Root>
+      <Box overflowY="auto" mx="-1" flex="1">
+        {rows.length === 0 ? (
+          <Text py="6" textAlign="center" textStyle="sm" color="fg.muted">
+            No match.
+          </Text>
+        ) : null}
+        {rows.map((asset) => (
+          <HStack
+            key={asset.id}
+            as="button"
+            w="full"
+            gap="3"
+            px="3"
+            py="2.5"
+            borderRadius="xl"
+            textAlign="left"
+            bg={asset.id === selectedId ? "bg.muted" : "transparent"}
+            _hover={{ bg: "bg.subtle" }}
+            onClick={() => onSelect(asset)}
           >
-            {id === "meme" ? "Meme coins" : "Tokenized stocks"}
-          </button>
+            <TokenAvatar symbol={asset.symbol} category={asset.category} chain={asset.chain} size="lg" />
+            <Stack gap="0" flex="1" minW="0">
+              <Text fontWeight="semibold">{asset.symbol}</Text>
+              <Text textStyle="xs" color="fg.muted" truncate>
+                {asset.name && asset.name !== asset.symbol ? `${asset.name} · ` : ""}
+                {chainName(asset.chain)}
+              </Text>
+            </Stack>
+            <Text fontFamily="mono" textStyle="sm">
+              {usd(asset.priceUsd) || "no price"}
+            </Text>
+          </HStack>
         ))}
-      </div>
-
-      <ul className="mt-2 min-h-0 flex-1 overflow-y-auto px-1 pb-1">
-        {rows.length === 0 ? <li className="px-3 py-6 text-center text-[13px] text-muted-foreground">No match.</li> : null}
-        {rows.map((asset) => {
-          const selected = asset.id === selectedId;
-          return (
-            <li key={asset.id}>
-              <button
-                type="button"
-                onClick={() => onSelect(asset)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors hover:bg-foreground/5",
-                  selected && "bg-foreground/6",
-                )}
-              >
-                <TokenAvatar symbol={asset.symbol} category={asset.category} chain={asset.chain} size="lg" />
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-[14.5px] font-semibold tracking-tight">{asset.symbol}</span>
-                  <span className="truncate text-[12px] text-muted-foreground">
-                    {asset.name && asset.name !== asset.symbol ? `${asset.name} · ` : ""}
-                    {chainName(asset.chain)}
-                  </span>
-                </span>
-                <span className="font-mono text-[13px] tabular-nums text-foreground/80">{usd(asset.priceUsd) || "no price"}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+      </Box>
+    </Stack>
   );
 }

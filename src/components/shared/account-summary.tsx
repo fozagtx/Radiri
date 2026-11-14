@@ -1,7 +1,7 @@
 "use client";
 
+import { Box, Button, Flex, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import { Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { BPS, formatUsdWad, mulDivUp, pricedAsset, valueWad, ZERO } from "@/lib/risk";
 import { useNearWallet } from "@/lib/wallets/near";
 import { HealthValue, LimitMeter, Note, StatTile } from "./bits";
@@ -48,14 +48,9 @@ export function usePortfolioTotals(): PortfolioTotals | null {
 export function SummaryTiles({ totals }: { totals: PortfolioTotals | null }) {
   const dash = "–";
   return (
-    <div className="flex flex-col gap-3">
-      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-        <StatTile
-          label="Portfolio value"
-          value={totals ? formatUsdWad(totals.netWad, { compact: true }) : dash}
-          hint="Collateral + supplied − debt"
-          className="col-span-2 sm:col-span-1"
-        />
+    <Stack gap="4">
+      <SimpleGrid columns={{ base: 2, md: 3, xl: 5 }} gap="3">
+        <StatTile label="Portfolio value" value={totals ? formatUsdWad(totals.netWad, { compact: true }) : dash} hint="Collateral + supplied − debt" />
         <StatTile label="Total collateral" value={totals ? formatUsdWad(totals.collateralWad, { compact: true }) : dash} />
         <StatTile label="Total borrowed" value={totals ? formatUsdWad(totals.debtWad, { compact: true }) : dash} hint="Incl. accrued interest" />
         <StatTile
@@ -63,15 +58,10 @@ export function SummaryTiles({ totals }: { totals: PortfolioTotals | null }) {
           value={totals ? formatUsdWad(totals.availableWad, { compact: true }) : dash}
           hint={totals ? `Limit ${formatUsdWad(totals.borrowLimitWad, { compact: true })}` : undefined}
         />
-        <StatTile
-          label="Health factor"
-          value={totals ? <HealthValue value={totals.healthFactorWad} /> : dash}
-          hint="Liquidation below 1.00"
-          className="col-span-2 sm:col-span-1"
-        />
-      </dl>
+        <StatTile label="Health factor" value={totals ? <HealthValue value={totals.healthFactorWad} /> : dash} hint="Liquidation below 1.00" />
+      </SimpleGrid>
       {totals ? <LimitMeter usedBps={totals.limitUsedBps} /> : null}
-    </div>
+    </Stack>
   );
 }
 
@@ -101,15 +91,31 @@ export function AccountNotice() {
 
   if (!lending.walletAccountId) {
     return (
-      <Note tone="neutral">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span>Connect a NEAR {wallet.network} wallet to load your lending positions from the contract.</span>
-          <Button size="sm" variant="outline" onClick={() => void wallet.signIn()} disabled={!wallet.ready || wallet.connecting}>
-            <Wallet aria-hidden />
-            Connect NEAR wallet
-          </Button>
-        </div>
-      </Note>
+      <Flex
+        align="center"
+        justify="space-between"
+        wrap="wrap"
+        gap="3"
+        px="4"
+        py="3"
+        borderRadius="xl"
+        borderWidth="1px"
+        borderColor="border"
+        bg="bg.panel"
+      >
+        <Box>
+          <Text textStyle="sm" fontWeight="semibold">
+            Connect your NEAR {wallet.network} wallet
+          </Text>
+          <Text textStyle="xs" color="fg.muted">
+            Your positions are read from the lending contract, and every action is signed by you.
+          </Text>
+        </Box>
+        <Button size="sm" borderRadius="full" bg="ink" color="white" _hover={{ bg: "#2a2a2a" }} onClick={() => void wallet.signIn()} disabled={!wallet.ready || wallet.connecting}>
+          <Wallet size={15} aria-hidden />
+          Connect NEAR wallet
+        </Button>
+      </Flex>
     );
   }
 

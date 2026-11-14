@@ -10,6 +10,7 @@ import {
   PiggyBank,
   Undo2,
 } from "lucide-react";
+import { Button, Circle, HStack, Stack, StackSeparator, Text } from "@chakra-ui/react";
 import { Pill } from "@/components/shared/bits";
 import { formatDateTime, type Tone } from "@/components/shared/format";
 import type { ActivityItem } from "@/types/protocol";
@@ -44,43 +45,48 @@ const STATUS_TONE: Record<ActivityItem["status"], Tone> = {
 };
 
 export function ActivityList({ items, empty }: { items: ActivityItem[]; empty: React.ReactNode }) {
-  if (items.length === 0) return <p className="py-2 text-xs text-muted-foreground">{empty}</p>;
+  if (items.length === 0)
+    return (
+      <Text py="4" textStyle="sm" color="fg.muted">
+        {empty}
+      </Text>
+    );
   return (
-    <ul className="divide-y divide-foreground/6">
+    <Stack gap="0" separator={<StackSeparator borderColor="border.muted" />}>
       {items.map((item) => {
         const Icon = KIND_ICON[item.kind] ?? HandCoins;
         const ms = Date.parse(item.timestamp);
         return (
-          <li key={item.id} className="flex items-start gap-3 py-2.5">
-            <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-foreground/5">
-              <Icon className="size-3.5 text-foreground/70" aria-hidden />
-            </span>
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[13px] font-medium">{item.title}</span>
+          <HStack key={item.id} align="flex-start" gap="3" py="3">
+            <Circle size="9" bg="bg.muted" flexShrink={0}>
+              <Icon size={15} aria-hidden />
+            </Circle>
+            <Stack gap="0.5" flex="1" minW="0">
+              <HStack gap="1.5" wrap="wrap">
+                <Text textStyle="sm" fontWeight="semibold">
+                  {item.title}
+                </Text>
                 <Pill tone={SOURCE_TONE[item.source]}>{SOURCE_LABEL[item.source]}</Pill>
                 {item.status !== "success" ? <Pill tone={STATUS_TONE[item.status]}>{item.status}</Pill> : null}
-              </div>
-              <span className="font-mono text-[11.5px] break-all text-foreground/75">{item.detail}</span>
-              <span className="font-mono text-[10.5px] text-muted-foreground">
+              </HStack>
+              <Text fontFamily="mono" textStyle="xs" color="fg" wordBreak="break-all">
+                {item.detail}
+              </Text>
+              <Text fontFamily="mono" textStyle="2xs" color="fg.muted">
                 {Number.isFinite(ms) ? formatDateTime(ms) : item.timestamp}
-              </span>
-            </div>
+              </Text>
+            </Stack>
             {item.explorerUrl ? (
-              <a
-                href={item.explorerUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-foreground/12 px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-                aria-label={`Open ${item.title} in explorer`}
-              >
-                {item.source === "1click" ? "Explorer" : "Block"}
-                <ExternalLink className="size-3" aria-hidden />
-              </a>
+              <Button asChild size="2xs" variant="outline" borderRadius="full" flexShrink={0}>
+                <a href={item.explorerUrl} target="_blank" rel="noreferrer" aria-label={`Open ${item.title} in explorer`}>
+                  {item.source === "1click" ? "Explorer" : "Block"}
+                  <ExternalLink size={11} aria-hidden />
+                </a>
+              </Button>
             ) : null}
-          </li>
+          </HStack>
         );
       })}
-    </ul>
+    </Stack>
   );
 }

@@ -1,17 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ChevronDown, Clock, Loader2, Settings2, ShieldCheck, Wallet, Zap } from "lucide-react";
+import { Badge, Box, Button, Card, Collapsible, Container, DataList, Flex, Heading, HStack, IconButton, Input, SegmentGroup, Skeleton, Spinner, Stack, Text } from "@chakra-ui/react";
+import { ArrowDown, ChevronDown, Clock, Settings2, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { TokenAvatar } from "@/components/app/token-avatar";
 import { CopyField } from "@/components/dashboard/copy-field";
 import { Note, Pill } from "@/components/shared/bits";
 import { useNow } from "@/components/shared/use-now";
-import { Input } from "@/components/ui/input";
 import { useSwapHistory } from "@/hooks/use-swap-history";
 import { checkAddress } from "@/lib/intents/addresses";
 import { chainFamily, chainName, evmChainIdOf, txExplorerUrl } from "@/lib/intents/chains";
 import type { RadiriSwapQuote, SwapQuoteResult } from "@/lib/intents/types";
-import { cn } from "@/lib/utils";
 import { useEvmWallet } from "@/lib/wallets/evm";
 import { useNearWallet } from "@/lib/wallets/near";
 import { useSolanaWallet } from "@/lib/wallets/solana";
@@ -72,36 +71,44 @@ function countdown(deadline: string | null, nowMs: number): string | null {
 
 function TokenButton({ asset, onClick }: { asset: CatalogAsset | undefined; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex shrink-0 items-center gap-2 rounded-full border border-foreground/10 bg-card py-1.5 pr-3 pl-1.5 shadow-sm transition-all hover:border-foreground/30 hover:shadow"
-    >
+    <Button onClick={onClick} variant="outline" bg="bg.panel" borderRadius="full" h="auto" py="1.5" pl="1.5" pr="3" gap="2" flexShrink={0} boxShadow="xs" _hover={{ borderColor: "border.emphasized", boxShadow: "sm" }}>
       {asset ? <TokenAvatar symbol={asset.symbol} category={asset.category} chain={asset.chain} size="sm" /> : null}
-      <span className="flex flex-col items-start leading-tight">
-        <span className="text-[15px] font-semibold tracking-tight">{asset?.symbol ?? "Select"}</span>
-        {asset ? <span className="text-[10.5px] text-muted-foreground">{chainName(asset.chain)}</span> : null}
-      </span>
-      <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
-    </button>
+      <Stack gap="0" align="flex-start">
+        <Text fontWeight="semibold" textStyle="md" lineHeight="1.1">
+          {asset?.symbol ?? "Select"}
+        </Text>
+        {asset ? (
+          <Text textStyle="2xs" color="fg.muted" fontWeight="normal">
+            {chainName(asset.chain)}
+          </Text>
+        ) : null}
+      </Stack>
+      <ChevronDown size={16} />
+    </Button>
   );
 }
 
 function AddressField({ id, label, chain, value, onChange, suggestion }: { id: string; label: string; chain: string; value: string; onChange: (value: string) => void; suggestion: string | null }) {
   const check = value ? checkAddress(chain, value) : null;
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-[12px] font-medium text-muted-foreground">
-        {label} on {chainName(chain)}
-      </label>
-      <Input id={id} value={value} onChange={(event) => onChange(event.target.value.trim())} placeholder={`${chainName(chain)} address`} className="h-10 rounded-xl font-mono text-xs" />
-      {check && check.valid === false ? <span className="text-[11px] text-destructive">{check.reason}</span> : null}
-      {suggestion && suggestion !== value ? (
-        <button type="button" onClick={() => onChange(suggestion)} className="w-fit text-[11.5px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
-          Use connected wallet {suggestion.slice(0, 6)}…{suggestion.slice(-4)}
-        </button>
+    <Stack gap="1.5">
+      <Text asChild textStyle="xs" fontWeight="medium" color="fg.muted">
+        <label htmlFor={id}>
+          {label} on {chainName(chain)}
+        </label>
+      </Text>
+      <Input id={id} value={value} onChange={(event) => onChange(event.target.value.trim())} placeholder={`${chainName(chain)} address`} fontFamily="mono" textStyle="xs" borderRadius="xl" bg="bg.panel" />
+      {check && check.valid === false ? (
+        <Text textStyle="xs" color="red.600">
+          {check.reason}
+        </Text>
       ) : null}
-    </div>
+      {suggestion && suggestion !== value ? (
+        <Button variant="plain" size="xs" alignSelf="flex-start" px="0" h="auto" color="fg.muted" textDecoration="underline" onClick={() => onChange(suggestion)}>
+          Use connected wallet {suggestion.slice(0, 6)}…{suggestion.slice(-4)}
+        </Button>
+      ) : null}
+    </Stack>
   );
 }
 
@@ -264,283 +271,325 @@ export function SwapWorkspace() {
     return { label: liveQuote ? "Get a fresh deposit address" : "Get deposit address", disabled: false };
   })();
 
+  const panelBox = { bg: "bg.subtle", borderRadius: "2xl", px: "4", py: "4" } as const;
+
   return (
-    <div className="mx-auto flex w-full max-w-[520px] flex-col gap-4">
-      <div className="radiri-rise text-center">
-        <h1 className="font-display text-[34px] leading-tight sm:text-[40px]">Swap meme coins for stocks</h1>
-        <p className="mt-1 text-[13.5px] text-muted-foreground">Any chain in, any chain out. Settled by NEAR Intents solvers.</p>
-      </div>
+    <Container maxW="xl" px="4" py={{ base: "6", md: "10" }}>
+      <Stack gap="5">
+        <Box textAlign="center" className="radiri-rise">
+          <Heading as="h1" fontFamily="display" fontWeight="normal" fontSize={{ base: "4xl", md: "5xl" }} lineHeight="1.05" letterSpacing="-0.03em">
+            Swap meme coins for stocks
+          </Heading>
+          <Text mt="2" textStyle="sm" color="fg.muted">
+            Any chain in, any chain out. Settled by NEAR Intents solvers.
+          </Text>
+        </Box>
 
-      <div className="radiri-rise relative rounded-[28px] border border-foreground/10 bg-card p-2 shadow-[0_30px_80px_-40px_rgba(25,25,25,0.45)]" style={{ animationDelay: "60ms" }}>
-        {catalog.state === "loading" ? (
-          <div className="flex h-72 items-center justify-center text-[13px] text-muted-foreground">
-            <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
-            Loading the NEAR Intents catalog…
-          </div>
-        ) : catalog.state === "error" ? (
-          <div className="p-3">
-            <Note tone="bad">The NEAR Intents catalog could not be loaded: {catalog.error}</Note>
-          </div>
-        ) : picking ? (
-          <TokenSelector
-            title={picking === "from" ? "You pay with" : "You receive"}
-            assets={assets}
-            initialCategory={(picking === "from" ? from?.category : to?.category) === "stock" ? "stock" : ("meme" as SwapCategory)}
-            selectedId={(picking === "from" ? from?.id : to?.id) ?? null}
-            onSelect={(asset) => {
-              if (picking === "from") setFromId(asset.id);
-              else setToId(asset.id);
-              setPicking(null);
-            }}
-            onClose={() => setPicking(null)}
-          />
-        ) : (
-          <>
-            <div className="flex items-center justify-between px-3 pt-1.5 pb-2">
-              <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
-                <span className="radiri-live-dot size-1.5 rounded-full bg-emerald-600" aria-hidden />
-                Live quotes · refreshed every 20s
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowSettings((value) => !value)}
-                aria-expanded={showSettings}
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-foreground/6 hover:text-foreground"
-              >
-                <Settings2 className="size-3.5" aria-hidden />
-                {(slippageBps / 100).toFixed(1)}% slippage
-              </button>
-            </div>
-            {showSettings ? (
-              <div className="mx-1 mb-2 flex items-center gap-2 rounded-2xl bg-foreground/[0.035] px-3 py-2">
-                <span className="text-[12px] text-muted-foreground">Max slippage</span>
-                {SLIPPAGE_OPTIONS.map((bps) => (
-                  <button
-                    key={bps}
-                    type="button"
-                    aria-pressed={slippageBps === bps}
-                    onClick={() => setSlippageBps(bps)}
-                    className={cn("rounded-full px-2.5 py-0.5 font-mono text-[12px] transition-colors", slippageBps === bps ? "bg-foreground text-background" : "text-foreground/70 hover:bg-foreground/6")}
-                  >
-                    {(bps / 100).toFixed(1)}%
-                  </button>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="relative flex flex-col gap-1">
-              <div className="rounded-[22px] bg-foreground/[0.035] px-4 py-4 transition-colors focus-within:bg-foreground/[0.055]">
-                <div className="text-[12.5px] text-muted-foreground">You pay</div>
-                <div className="mt-1 flex items-center gap-3">
-                  <input
-                    aria-label={`Amount of ${from?.symbol ?? "the source token"}`}
-                    inputMode="decimal"
-                    value={amount}
-                    onChange={(event) => setAmount(event.target.value.replace(/[^0-9.]/g, ""))}
-                    className="w-full min-w-0 bg-transparent font-mono text-[30px] tracking-tight tabular-nums outline-none sm:text-[34px]"
-                    placeholder="0"
-                  />
-                  <TokenButton asset={from} onClick={() => setPicking("from")} />
-                </div>
-                <div className="mt-1 h-4 text-[12px] text-muted-foreground">{usd(quote?.amountInUsd ?? (from?.priceUsd && Number(amount) ? from.priceUsd * Number(amount) : null))}</div>
-              </div>
-
-              <button
-                type="button"
-                aria-label="Reverse the swap direction"
-                onClick={() => {
-                  setFromId(to?.id ?? null);
-                  setToId(from?.id ?? null);
+        <Card.Root variant="outline" bg="bg.panel" borderRadius="3xl" boxShadow="lift" className="radiri-rise">
+          <Card.Body p="3">
+            {catalog.state === "loading" ? (
+              <Flex h="72" align="center" justify="center" gap="2" color="fg.muted" textStyle="sm">
+                <Spinner size="sm" />
+                Loading the NEAR Intents catalog…
+              </Flex>
+            ) : catalog.state === "error" ? (
+              <Note tone="bad">The NEAR Intents catalog could not be loaded: {catalog.error}</Note>
+            ) : picking ? (
+              <TokenSelector
+                title={picking === "from" ? "You pay with" : "You receive"}
+                assets={assets}
+                initialCategory={(picking === "from" ? from?.category : to?.category) === "stock" ? "stock" : ("meme" as SwapCategory)}
+                selectedId={(picking === "from" ? from?.id : to?.id) ?? null}
+                onSelect={(asset) => {
+                  if (picking === "from") setFromId(asset.id);
+                  else setToId(asset.id);
+                  setPicking(null);
                 }}
-                className="absolute top-1/2 left-1/2 z-10 grid size-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-2xl border-4 border-card bg-foreground/[0.06] text-foreground/75 backdrop-blur transition-all hover:rotate-180 hover:bg-foreground hover:text-background"
-              >
-                <ArrowDown className="size-4" aria-hidden />
-              </button>
-
-              <div className="rounded-[22px] bg-foreground/[0.035] px-4 py-4">
-                <div className="text-[12.5px] text-muted-foreground">You receive</div>
-                <div className="mt-1 flex items-center gap-3">
-                  <div className={cn("w-full min-w-0 truncate font-mono text-[30px] tracking-tight tabular-nums sm:text-[34px]", !quote && "text-foreground/30")}>
-                    {quote ? trimAmount(quote.amountOut, 6) : indicative.state === "loading" ? <span className="inline-block h-8 w-40 animate-pulse rounded-lg bg-foreground/8 align-middle" /> : "0"}
-                  </div>
-                  <TokenButton asset={to} onClick={() => setPicking("to")} />
-                </div>
-                <div className="mt-1 h-4 text-[12px] text-muted-foreground">
-                  {usd(quote?.amountOutUsd)}
-                  {impact !== null ? <span className={cn("ml-1.5", impact < -3 ? "text-destructive" : "")}>({impact.toFixed(2)}%)</span> : null}
-                </div>
-              </div>
-            </div>
-
-            {indicative.state === "failed" ? (
-              <div className="mx-1 mt-2">
-                <Note tone={indicative.failure.kind === "no-liquidity" ? "warn" : "bad"}>
-                  NEAR Intents: {indicative.failure.reason}
-                  {indicative.failure.kind === "no-liquidity" ? ". Try a smaller amount." : ""}
-                </Note>
-              </div>
-            ) : null}
-
-            {quote ? (
-              <div className="mx-1 mt-2 rounded-2xl border border-foreground/8 px-3.5 py-2.5 text-[12.5px]">
-                <button type="button" onClick={() => setShowDetails((value) => !value)} aria-expanded={showDetails} className="flex w-full items-center justify-between gap-2">
-                  <span className="font-mono text-foreground/80">{rate(quote)}</span>
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="size-3.5" aria-hidden />
-                    {quote.etaSeconds === null ? "–" : `~${quote.etaSeconds}s`}
-                    <ChevronDown className={cn("size-3.5 transition-transform", showDetails && "rotate-180")} aria-hidden />
-                  </span>
-                </button>
-                {showDetails ? (
-                  <dl className="mt-2.5 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 border-t border-foreground/8 pt-2.5">
-                    <dt className="text-muted-foreground">Minimum received</dt>
-                    <dd className="text-right font-mono">
-                      {trimAmount(quote.minAmountOut, 6)} {quote.destination.symbol}
-                    </dd>
-                    <dt className="text-muted-foreground">Route</dt>
-                    <dd className="text-right">
-                      {chainName(quote.origin.chain)} → NEAR Intents → {chainName(quote.destination.chain)}
-                    </dd>
-                    {quote.fees.map((fee) => (
-                      <div key={fee.label} className="contents">
-                        <dt className="text-muted-foreground">{fee.label}</dt>
-                        <dd className="text-right font-mono">
-                          {trimAmount(fee.amount, 8)} {fee.unit}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                ) : null}
-              </div>
-            ) : null}
-
-            {from && to ? (
-              <div className="mx-1 mt-2 flex flex-col gap-3 rounded-2xl border border-foreground/8 px-3.5 py-3">
-                <div className="flex flex-wrap gap-2">
-                  {origin.connect && !origin.address ? (
-                    <button type="button" onClick={() => void origin.connect?.().catch((error: unknown) => setSendError(error instanceof Error ? error.message : String(error)))} className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-3 py-1.5 text-[12px] font-medium hover:border-foreground/35">
-                      <Wallet className="size-3.5" aria-hidden />
-                      Connect {origin.label}
-                    </button>
-                  ) : null}
-                  {destination.connect && !destination.address && destination.label !== origin.label ? (
-                    <button type="button" onClick={() => void destination.connect?.().catch((error: unknown) => setSendError(error instanceof Error ? error.message : String(error)))} className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-3 py-1.5 text-[12px] font-medium hover:border-foreground/35">
-                      <Wallet className="size-3.5" aria-hidden />
-                      Connect {destination.label}
-                    </button>
-                  ) : null}
-                </div>
-                <AddressField id="swap-recipient" label={`Receive ${to.symbol}`} chain={to.chain} value={recipient} onChange={setRecipient} suggestion={destination.address} />
-                <AddressField id="swap-refund" label="Refund address" chain={from.chain} value={refundTo} onChange={setRefundTo} suggestion={origin.address} />
-              </div>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={() => void getExecutableQuote()}
-              disabled={cta.disabled}
-              className="mx-1 mt-2 mb-1 flex h-14 w-[calc(100%-0.5rem)] items-center justify-center gap-2 rounded-[20px] bg-foreground text-[15.5px] font-semibold text-background transition-all hover:bg-foreground/85 disabled:bg-foreground/10 disabled:text-foreground/40"
-            >
-              {cta.busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Zap className="size-4" aria-hidden />}
-              {cta.label}
-            </button>
-            {live.state === "failed" ? (
-              <div className="mx-1 mb-1">
-                <Note tone="bad">NEAR Intents: {live.failure.reason}</Note>
-              </div>
-            ) : null}
-          </>
-        )}
-      </div>
-
-      {liveQuote && liveQuote.depositAddress && !picking ? (
-        <div className="radiri-rise rounded-[28px] border border-foreground/10 bg-card p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-[15px] font-semibold tracking-tight">Send your {liveQuote.origin.symbol}</h2>
-            <span className="flex items-center gap-2">
-              {liveQuote.signatureVerified ? (
-                <Pill tone="good">
-                  <ShieldCheck className="size-3" aria-hidden />
-                  signed quote
-                </Pill>
-              ) : null}
-              {timeLeft ? <Pill tone={deadlinePassed ? "bad" : "neutral"}>{deadlinePassed ? "expired" : `${timeLeft} left`}</Pill> : null}
-            </span>
-          </div>
-          <p className="mt-1 text-[12.5px] text-muted-foreground">
-            Send exactly this amount on {chainName(liveQuote.origin.chain)}. Solvers deliver {trimAmount(liveQuote.amountOut, 6)} {liveQuote.destination.symbol} to your recipient, or refund you.
-          </p>
-          <div className="mt-3 flex flex-col gap-2.5">
-            <CopyField value={liveQuote.depositAddress} label="deposit address" />
-            {liveQuote.depositMemo ? <CopyField value={liveQuote.depositMemo} label="deposit memo" /> : null}
-            <CopyField value={liveQuote.amountIn} label="amount" />
-            {deadlinePassed ? (
-              <Note tone="warn">This quote expired. Get a fresh deposit address before sending anything.</Note>
-            ) : walletFamily === "evm" || walletFamily === "solana" ? (
-              <button
-                type="button"
-                onClick={() => void sendWithWallet(liveQuote)}
-                disabled={sending || !origin.address}
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-foreground text-[14.5px] font-semibold text-background transition-colors hover:bg-foreground/85 disabled:bg-foreground/10 disabled:text-foreground/40"
-              >
-                {sending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <TokenAvatar symbol={liveQuote.origin.symbol} category="meme" size="xs" />}
-                {origin.address ? `Send ${trimAmount(liveQuote.amountIn, 4)} ${liveQuote.origin.symbol} with your ${origin.label}` : `Connect your ${origin.label} to send`}
-              </button>
+                onClose={() => setPicking(null)}
+              />
             ) : (
-              <Note tone="neutral">Send the exact amount from any {chainName(liveQuote.origin.chain)} wallet to the deposit address.</Note>
+              <Stack gap="2">
+                <Flex justify="space-between" align="center" px="2" pt="1">
+                  <HStack gap="2" textStyle="xs" color="fg.muted" fontWeight="medium">
+                    <span className="radiri-live-dot size-1.5 rounded-full bg-emerald-600" aria-hidden />
+                    Live quotes · refreshed every 20s
+                  </HStack>
+                  <Button size="xs" variant="ghost" borderRadius="full" color="fg.muted" onClick={() => setShowSettings((value) => !value)} aria-expanded={showSettings}>
+                    <Settings2 size={14} />
+                    {(slippageBps / 100).toFixed(1)}% slippage
+                  </Button>
+                </Flex>
+                {showSettings ? (
+                  <HStack {...panelBox} py="2.5" justify="space-between">
+                    <Text textStyle="xs" color="fg.muted">
+                      Max slippage
+                    </Text>
+                    <SegmentGroup.Root size="xs" value={String(slippageBps)} onValueChange={(details) => details.value && setSlippageBps(Number(details.value))}>
+                      <SegmentGroup.Indicator />
+                      <SegmentGroup.Items items={SLIPPAGE_OPTIONS.map((bps) => ({ value: String(bps), label: `${(bps / 100).toFixed(1)}%` }))} />
+                    </SegmentGroup.Root>
+                  </HStack>
+                ) : null}
+
+                <Box position="relative">
+                  <Stack gap="1.5">
+                    <Box {...panelBox} _focusWithin={{ bg: "bg.muted" }} transition="background 0.15s">
+                      <Text textStyle="sm" color="fg.muted">
+                        You pay
+                      </Text>
+                      <Flex align="center" gap="3" mt="1">
+                        <Input
+                          aria-label={`Amount of ${from?.symbol ?? "the source token"}`}
+                          inputMode="decimal"
+                          value={amount}
+                          onChange={(event) => setAmount(event.target.value.replace(/[^0-9.]/g, ""))}
+                          variant="flushed"
+                          border="0"
+                          px="0"
+                          h="auto"
+                          fontFamily="mono"
+                          fontSize={{ base: "3xl", md: "4xl" }}
+                          letterSpacing="-0.02em"
+                          placeholder="0"
+                          _focusVisible={{ boxShadow: "none" }}
+                        />
+                        <TokenButton asset={from} onClick={() => setPicking("from")} />
+                      </Flex>
+                      <Text mt="1" h="4" textStyle="xs" color="fg.muted">
+                        {usd(quote?.amountInUsd ?? (from?.priceUsd && Number(amount) ? from.priceUsd * Number(amount) : null))}
+                      </Text>
+                    </Box>
+                    <Box {...panelBox}>
+                      <Text textStyle="sm" color="fg.muted">
+                        You receive
+                      </Text>
+                      <Flex align="center" gap="3" mt="1">
+                        <Box flex="1" minW="0" fontFamily="mono" fontSize={{ base: "3xl", md: "4xl" }} letterSpacing="-0.02em" color={quote ? "fg" : "fg.subtle"} truncate>
+                          {quote ? trimAmount(quote.amountOut, 6) : indicative.state === "loading" ? <Skeleton h="10" w="44" borderRadius="lg" /> : "0"}
+                        </Box>
+                        <TokenButton asset={to} onClick={() => setPicking("to")} />
+                      </Flex>
+                      <Text mt="1" h="4" textStyle="xs" color="fg.muted">
+                        {usd(quote?.amountOutUsd)}
+                        {impact !== null ? (
+                          <Text as="span" ml="1.5" color={impact < -3 ? "red.600" : undefined}>
+                            ({impact.toFixed(2)}%)
+                          </Text>
+                        ) : null}
+                      </Text>
+                    </Box>
+                  </Stack>
+                  <IconButton
+                    aria-label="Reverse the swap direction"
+                    position="absolute"
+                    top="50%"
+                    left="50%"
+                    transform="translate(-50%, -50%)"
+                    size="sm"
+                    borderRadius="xl"
+                    borderWidth="4px"
+                    borderColor="bg.panel"
+                    bg="bg.muted"
+                    color="fg"
+                    _hover={{ bg: "ink", color: "white" }}
+                    onClick={() => {
+                      setFromId(to?.id ?? null);
+                      setToId(from?.id ?? null);
+                    }}
+                  >
+                    <ArrowDown size={16} />
+                  </IconButton>
+                </Box>
+
+                {indicative.state === "failed" ? (
+                  <Note tone={indicative.failure.kind === "no-liquidity" ? "warn" : "bad"}>
+                    NEAR Intents: {indicative.failure.reason}
+                    {indicative.failure.kind === "no-liquidity" ? ". Try a smaller amount." : ""}
+                  </Note>
+                ) : null}
+
+                {quote ? (
+                  <Collapsible.Root open={showDetails} onOpenChange={(details) => setShowDetails(details.open)}>
+                    <Box borderWidth="1px" borderColor="border" borderRadius="xl" px="4" py="2.5">
+                      <Collapsible.Trigger asChild>
+                        <Flex as="button" w="full" justify="space-between" align="center" gap="2" textStyle="sm">
+                          <Text fontFamily="mono" textStyle="xs">
+                            {rate(quote)}
+                          </Text>
+                          <HStack gap="2" color="fg.muted" textStyle="xs">
+                            <Clock size={13} />
+                            {quote.etaSeconds === null ? "–" : `~${quote.etaSeconds}s`}
+                            <ChevronDown size={14} style={{ transform: showDetails ? "rotate(180deg)" : undefined, transition: "transform 0.2s" }} />
+                          </HStack>
+                        </Flex>
+                      </Collapsible.Trigger>
+                      <Collapsible.Content>
+                        <DataList.Root orientation="horizontal" size="sm" gap="1.5" mt="3" pt="3" borderTopWidth="1px" borderColor="border.muted">
+                          <DataList.Item>
+                            <DataList.ItemLabel color="fg.muted">Minimum received</DataList.ItemLabel>
+                            <DataList.ItemValue fontFamily="mono" justifyContent="flex-end">
+                              {trimAmount(quote.minAmountOut, 6)} {quote.destination.symbol}
+                            </DataList.ItemValue>
+                          </DataList.Item>
+                          <DataList.Item>
+                            <DataList.ItemLabel color="fg.muted">Route</DataList.ItemLabel>
+                            <DataList.ItemValue justifyContent="flex-end">
+                              {chainName(quote.origin.chain)} → NEAR Intents → {chainName(quote.destination.chain)}
+                            </DataList.ItemValue>
+                          </DataList.Item>
+                          {quote.fees.map((fee) => (
+                            <DataList.Item key={fee.label}>
+                              <DataList.ItemLabel color="fg.muted">{fee.label}</DataList.ItemLabel>
+                              <DataList.ItemValue fontFamily="mono" justifyContent="flex-end">
+                                {trimAmount(fee.amount, 8)} {fee.unit}
+                              </DataList.ItemValue>
+                            </DataList.Item>
+                          ))}
+                        </DataList.Root>
+                      </Collapsible.Content>
+                    </Box>
+                  </Collapsible.Root>
+                ) : null}
+
+                {from && to ? (
+                  <Stack gap="3" borderWidth="1px" borderColor="border" borderRadius="xl" px="4" py="4">
+                    <HStack gap="2" wrap="wrap">
+                      {origin.connect && !origin.address ? (
+                        <Button size="xs" variant="outline" borderRadius="full" onClick={() => void origin.connect?.().catch((error: unknown) => setSendError(error instanceof Error ? error.message : String(error)))}>
+                          <Wallet size={13} />
+                          Connect {origin.label}
+                        </Button>
+                      ) : null}
+                      {destination.connect && !destination.address && destination.label !== origin.label ? (
+                        <Button size="xs" variant="outline" borderRadius="full" onClick={() => void destination.connect?.().catch((error: unknown) => setSendError(error instanceof Error ? error.message : String(error)))}>
+                          <Wallet size={13} />
+                          Connect {destination.label}
+                        </Button>
+                      ) : null}
+                    </HStack>
+                    <AddressField id="swap-recipient" label={`Receive ${to.symbol}`} chain={to.chain} value={recipient} onChange={setRecipient} suggestion={destination.address} />
+                    <AddressField id="swap-refund" label="Refund address" chain={from.chain} value={refundTo} onChange={setRefundTo} suggestion={origin.address} />
+                  </Stack>
+                ) : null}
+
+                <Button
+                  size="xl"
+                  h="14"
+                  borderRadius="2xl"
+                  bg="ink"
+                  color="white"
+                  _hover={{ bg: "#2a2a2a" }}
+                  _disabled={{ bg: "bg.muted", color: "fg.subtle", opacity: 1 }}
+                  disabled={cta.disabled}
+                  loading={cta.busy}
+                  loadingText={cta.label}
+                  onClick={() => void getExecutableQuote()}
+                >
+                  <Zap size={16} />
+                  {cta.label}
+                </Button>
+                {live.state === "failed" ? <Note tone="bad">NEAR Intents: {live.failure.reason}</Note> : null}
+              </Stack>
             )}
-            <div className="flex gap-2">
-              <Input aria-label="Deposit transaction hash" placeholder="Sent manually? Paste the transaction hash" value={manualHash} onChange={(event) => setManualHash(event.target.value.trim())} className="h-10 rounded-xl font-mono text-xs" />
-              <button type="button" disabled={!manualHash} onClick={() => void submitHash(liveQuote, manualHash)} className="shrink-0 rounded-xl border border-foreground/15 px-3 text-[12.5px] font-medium disabled:opacity-40">
-                Submit
-              </button>
-            </div>
-            {sendError ? <Note tone="bad">{sendError}</Note> : null}
-          </div>
-        </div>
-      ) : null}
+          </Card.Body>
+        </Card.Root>
 
-      {trackedRecord && !picking ? (
-        <div className="radiri-rise rounded-[28px] border border-foreground/10 bg-card p-5">
-          <h2 className="mb-2 text-[15px] font-semibold tracking-tight">Settlement</h2>
-          <SwapTracker record={trackedRecord} />
-          {trackedRecord.depositTxHash ? (
-            <p className="mt-2 text-[11.5px] text-muted-foreground">
-              Deposit tx{" "}
-              <a className="font-mono underline underline-offset-2" href={txExplorerUrl(trackedRecord.quote.origin.chain, trackedRecord.depositTxHash) ?? undefined} target="_blank" rel="noreferrer">
-                {trackedRecord.depositTxHash.slice(0, 14)}…
-              </a>
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+        {liveQuote && liveQuote.depositAddress && !picking ? (
+          <Card.Root variant="outline" bg="bg.panel" borderRadius="3xl" boxShadow="panel" className="radiri-rise">
+            <Card.Body gap="4">
+              <Flex justify="space-between" align="center" wrap="wrap" gap="2">
+                <Text fontWeight="semibold" textStyle="md">
+                  Send your {liveQuote.origin.symbol}
+                </Text>
+                <HStack gap="2">
+                  {liveQuote.signatureVerified ? (
+                    <Badge colorPalette="green" variant="subtle" borderRadius="full" gap="1">
+                      <ShieldCheck size={12} />
+                      signed quote
+                    </Badge>
+                  ) : null}
+                  {timeLeft ? (
+                    <Badge colorPalette={deadlinePassed ? "red" : "gray"} variant="subtle" borderRadius="full" fontFamily="mono">
+                      {deadlinePassed ? "expired" : `${timeLeft} left`}
+                    </Badge>
+                  ) : null}
+                </HStack>
+              </Flex>
+              <Text textStyle="sm" color="fg.muted">
+                Send exactly this amount on {chainName(liveQuote.origin.chain)}. Solvers deliver {trimAmount(liveQuote.amountOut, 6)} {liveQuote.destination.symbol} to your recipient, or refund you.
+              </Text>
+              <Stack gap="2">
+                <CopyField value={liveQuote.depositAddress} label="Deposit to" />
+                {liveQuote.depositMemo ? <CopyField value={liveQuote.depositMemo} label="Memo" /> : null}
+                <CopyField value={liveQuote.amountIn} label="Amount" />
+              </Stack>
+              {deadlinePassed ? (
+                <Note tone="warn">This quote expired. Get a fresh deposit address before sending anything.</Note>
+              ) : walletFamily === "evm" || walletFamily === "solana" ? (
+                <Button size="lg" borderRadius="xl" bg="ink" color="white" _hover={{ bg: "#2a2a2a" }} loading={sending} disabled={!origin.address} onClick={() => void sendWithWallet(liveQuote)}>
+                  <TokenAvatar symbol={liveQuote.origin.symbol} category="meme" size="xs" />
+                  {origin.address ? `Send ${trimAmount(liveQuote.amountIn, 4)} ${liveQuote.origin.symbol} with your ${origin.label}` : `Connect your ${origin.label} to send`}
+                </Button>
+              ) : (
+                <Note tone="neutral">Send the exact amount from any {chainName(liveQuote.origin.chain)} wallet to the deposit address.</Note>
+              )}
+              <HStack gap="2">
+                <Input aria-label="Deposit transaction hash" placeholder="Sent manually? Paste the transaction hash" value={manualHash} onChange={(event) => setManualHash(event.target.value.trim())} fontFamily="mono" textStyle="xs" borderRadius="xl" />
+                <Button variant="outline" borderRadius="xl" disabled={!manualHash} onClick={() => void submitHash(liveQuote, manualHash)}>
+                  Submit
+                </Button>
+              </HStack>
+              {sendError ? <Note tone="bad">{sendError}</Note> : null}
+            </Card.Body>
+          </Card.Root>
+        ) : null}
 
-      {history.records.length > 0 && !picking ? (
-        <div className="rounded-[28px] border border-foreground/10 bg-card p-4">
-          <h2 className="px-1 pb-2 text-[13.5px] font-semibold tracking-tight">Your swaps</h2>
-          <ul className="flex flex-col gap-1">
-            {history.records.slice(0, 8).map((record) => (
-              <li key={record.depositAddress}>
-                <button type="button" onClick={() => setTracking(record.depositAddress)} className="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition-colors hover:bg-foreground/5">
-                  <span className="inline-flex items-center">
-                    <TokenAvatar symbol={record.quote.origin.symbol} category={record.quote.origin.category} size="sm" className="ring-2 ring-card" />
-                    <TokenAvatar symbol={record.quote.destination.symbol} category={record.quote.destination.category} size="sm" className="-ml-2 ring-2 ring-card" />
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-[12.5px]">
+        {trackedRecord && !picking ? (
+          <Card.Root variant="outline" bg="bg.panel" borderRadius="3xl" boxShadow="panel" className="radiri-rise">
+            <Card.Body gap="3">
+              <Text fontWeight="semibold" textStyle="md">
+                Settlement
+              </Text>
+              <SwapTracker record={trackedRecord} />
+              {trackedRecord.depositTxHash ? (
+                <Text textStyle="xs" color="fg.muted">
+                  Deposit tx{" "}
+                  <a style={{ fontFamily: "var(--font-geist-mono)", textDecoration: "underline" }} href={txExplorerUrl(trackedRecord.quote.origin.chain, trackedRecord.depositTxHash) ?? undefined} target="_blank" rel="noreferrer">
+                    {trackedRecord.depositTxHash.slice(0, 14)}…
+                  </a>
+                </Text>
+              ) : null}
+            </Card.Body>
+          </Card.Root>
+        ) : null}
+
+        {history.records.length > 0 && !picking ? (
+          <Card.Root variant="outline" bg="bg.panel" borderRadius="3xl">
+            <Card.Body gap="2">
+              <Text fontWeight="semibold" textStyle="sm">
+                Your swaps
+              </Text>
+              {history.records.slice(0, 8).map((record) => (
+                <HStack key={record.depositAddress} as="button" gap="3" px="2" py="2" borderRadius="xl" textAlign="left" _hover={{ bg: "bg.subtle" }} onClick={() => setTracking(record.depositAddress)}>
+                  <HStack gap="0">
+                    <TokenAvatar symbol={record.quote.origin.symbol} category={record.quote.origin.category} size="sm" />
+                    <TokenAvatar symbol={record.quote.destination.symbol} category={record.quote.destination.category} size="sm" className="-ml-2" />
+                  </HStack>
+                  <Text flex="1" minW="0" truncate textStyle="sm">
                     {trimAmount(record.quote.amountIn, 2)} {record.quote.origin.symbol} → {trimAmount(record.quote.amountOut, 4)} {record.quote.destination.symbol}
-                  </span>
+                  </Text>
                   <Pill tone={record.lastStatus === "SUCCESS" ? "good" : record.lastStatus === "FAILED" ? "bad" : record.lastStatus === "REFUNDED" ? "warn" : "neutral"}>{record.lastStatus}</Pill>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+                </HStack>
+              ))}
+            </Card.Body>
+          </Card.Root>
+        ) : null}
 
-      <p className="px-2 text-center text-[11.5px] text-muted-foreground">
-        NEAR Intents has no testnet, so swaps run on mainnet with real funds. You sign the deposit in your own wallet. Tokenized stocks are Ondo
-        Global Markets tokens; availability depends on your region.
-      </p>
-    </div>
+        <Text textAlign="center" textStyle="xs" color="fg.muted" px="2">
+          NEAR Intents has no testnet, so swaps run on mainnet with real funds. You sign the deposit in your own wallet. Tokenized stocks are Ondo Global
+          Markets tokens; availability depends on your region.
+        </Text>
+      </Stack>
+    </Container>
   );
 }

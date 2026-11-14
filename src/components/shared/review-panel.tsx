@@ -1,5 +1,6 @@
 "use client";
 
+import { Box, DataList, HStack, Stack, Text } from "@chakra-ui/react";
 import { ArrowRight } from "lucide-react";
 import {
   type ActionPreview,
@@ -25,20 +26,24 @@ function limitUsedBps(risk: AccountRisk): number | null {
 
 function Row({ label, before, after, changed }: { label: string; before: React.ReactNode; after: React.ReactNode; changed: boolean }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 py-1.5 text-xs sm:grid-cols-[10rem_minmax(0,1fr)]">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="flex flex-wrap items-center justify-end gap-1.5 font-mono tabular-nums sm:justify-start">
+    <DataList.Item py="1.5">
+      <DataList.ItemLabel color="fg.muted" minW="40">
+        {label}
+      </DataList.ItemLabel>
+      <DataList.ItemValue fontFamily="mono" justifyContent="flex-end">
         {changed ? (
-          <>
-            <span className="text-muted-foreground">{before}</span>
-            <ArrowRight className="size-3 text-muted-foreground" aria-label="becomes" />
-            <span>{after}</span>
-          </>
+          <HStack gap="1.5" wrap="wrap" justify="flex-end">
+            <Text as="span" color="fg.muted">
+              {before}
+            </Text>
+            <ArrowRight size={12} aria-label="becomes" />
+            <Text as="span">{after}</Text>
+          </HStack>
         ) : (
-          <span>{after}</span>
+          after
         )}
-      </dd>
-    </div>
+      </DataList.ItemValue>
+    </DataList.Item>
   );
 }
 
@@ -71,9 +76,11 @@ export function ReviewPanel({
   );
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-foreground/10 bg-background/60 p-3">
-      <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Review</span>
-      <dl className="divide-y divide-foreground/6">
+    <Stack gap="3" borderWidth="1px" borderColor="border" bg="bg.subtle" borderRadius="xl" p="4">
+      <Text textStyle="xs" fontWeight="medium" color="fg.muted" textTransform="uppercase" letterSpacing="0.06em">
+        Review
+      </Text>
+      <DataList.Root orientation="horizontal" size="sm" gap="0" divideY="1px" divideColor="border.muted">
         <Row
           label="Health factor"
           before={<HealthValue value={before.healthFactorWad} />}
@@ -126,17 +133,21 @@ export function ReviewPanel({
             changed={false}
           />
         ) : null}
-      </dl>
+      </DataList.Root>
       <LimitMeter usedBps={usedAfter ?? usedBefore} label="Borrow limit used after" />
-      <div className="flex flex-col gap-1 pt-1">
-        <span className="text-[11px] text-muted-foreground">Oracle prices (USD per whole token, age, freshness)</span>
-        {priceRows.map((item) => (
-          <div key={item.config.token_id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="font-medium">{item.config.symbol}</span>
-            <PriceTag asset={item} check={pricedAsset(market.assets, item.config.token_id, market.nowMs).price} />
-          </div>
-        ))}
-      </div>
-    </div>
+      <Box>
+        <Text textStyle="xs" color="fg.muted" mb="1.5">
+          Oracle prices (USD per whole token)
+        </Text>
+        <Stack gap="1.5">
+          {priceRows.map((item) => (
+            <HStack key={item.config.token_id} justify="space-between" wrap="wrap" textStyle="sm">
+              <Text fontWeight="medium">{item.config.symbol}</Text>
+              <PriceTag asset={item} check={pricedAsset(market.assets, item.config.token_id, market.nowMs).price} />
+            </HStack>
+          ))}
+        </Stack>
+      </Box>
+    </Stack>
   );
 }
