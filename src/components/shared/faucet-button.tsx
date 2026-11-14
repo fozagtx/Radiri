@@ -23,7 +23,7 @@ async function ensureAccountFunded(accountId: string): Promise<string | null> {
   const body = (await res.json().catch(() => null)) as { funded?: boolean; txHash?: string | null; reason?: string | null; error?: string } | null;
   if (!res.ok) throw new Error(body?.error ?? `Faucet HTTP ${res.status}`);
   if (body?.funded) return body.txHash ?? null;
-  if (body?.reason === "account already exists") return null;
+  if (body?.reason === "account already has funds" || body?.reason === "account already exists") return null;
   throw new Error(
     `${accountId} is not funded on NEAR testnet and the app could not fund it (${body?.reason ?? "unknown reason"}). Connect a testnet account that already exists.`,
   );

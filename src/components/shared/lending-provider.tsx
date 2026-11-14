@@ -170,6 +170,11 @@ export function LendingProvider({ children }: { children: React.ReactNode }) {
   const execute = useCallback(
     async (action: LendingAction) => {
       if (!accountId) throw new Error("Connect a NEAR testnet wallet first");
+      // The contract rejects stale prices, and a wallet approval can outlive the preview's window.
+      // Refresh right before signing; the route is a no-op when prices are already fresh.
+      if (action.kind === "borrow" || action.kind === "withdraw_collateral" || action.kind === "withdraw_supply") {
+        await fetch("/api/oracle/refresh", { method: "POST", signal: AbortSignal.timeout(8_000) }).catch(() => undefined);
+      }
       const result = (await client.execute(accountId, action)) as ExecutionResult;
       await Promise.all([refresh(), loadBalances()]);
       return { ...result, notes: result.notes ?? [] };

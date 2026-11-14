@@ -56,7 +56,13 @@ export function ActionForm({
   const symbol = asset.config.symbol;
   const walletBalance = USES_WALLET.includes(kind) ? lending.balances[tokenId]?.amount ?? null : null;
   const parsed = tryParseUnits(input, decimals);
-  const max = maxActionAmount(market, lending.holdings, kind, tokenId, walletBalance);
+  const capacity = maxActionAmount(market, lending.holdings, kind, tokenId, walletBalance);
+  // Prices can move between this preview and execution, and an exact-boundary amount is rejected
+  // on chain when the borrow limit dips. Leave 1% headroom when health is the limiting factor.
+  const max =
+    capacity.limitedBy === "health" && (kind === "borrow" || kind === "withdraw_collateral")
+      ? { ...capacity, amount: capacity.amount - capacity.amount / BigInt(100) }
+      : capacity;
   const preview = parsed !== null ? previewAction(market, lending.holdings, { kind, tokenId, amount: parsed, walletBalance }) : null;
   const needsWallet = lending.mode === "near" && !lending.walletAccountId;
   const balanceLabel =
