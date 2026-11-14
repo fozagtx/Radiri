@@ -4,13 +4,14 @@ import { ChainLogo, TokenAvatar } from "@/components/app/token-avatar";
 
 const STOCKS = [
   { symbol: "AAPL", name: "Apple" },
-  { symbol: "TSLA", name: "Tesla" },
-  { symbol: "NVDA", name: "NVIDIA" },
+  { symbol: "AMZN", name: "Amazon" },
   { symbol: "GOOGL", name: "Alphabet" },
+  { symbol: "MSFT", name: "Microsoft" },
+  { symbol: "NVDA", name: "NVIDIA" },
+  { symbol: "TSLA", name: "Tesla" },
   { symbol: "META", name: "Meta" },
-  { symbol: "HOOD", name: "Robinhood" },
 ];
-const MEMES = ["PEPE", "SHIB", "DOGE", "MOG", "SPX", "WIF"];
+const MEMES = ["PEPE", "WIF", "BONK", "SHIB", "DOGE", "TRUMP", "BRETT", "PENGU"];
 const CHAINS = [
   { id: "eth", name: "Ethereum" },
   { id: "sol", name: "Solana" },
@@ -44,7 +45,7 @@ export function AssetStrip() {
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-[13px] text-muted-foreground">
         {CHAINS.map((chain) => (
           <span key={chain.id} className="flex items-center gap-1.5">
-            <ChainLogo chain={chain.id} className="size-5" />
+            <ChainLogo chain={chain.id} size={20} />
             {chain.name}
           </span>
         ))}

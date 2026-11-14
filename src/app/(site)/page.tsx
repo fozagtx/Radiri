@@ -5,6 +5,7 @@ import { LiveQuote } from "@/components/landing/live-quote";
 import { RadiriMark } from "@/components/landing/mark";
 import { RevealObserver } from "@/components/landing/reveal";
 import { AssetStrip } from "@/components/landing/asset-strip";
+import { ChainLogo, TokenAvatar } from "@/components/app/token-avatar";
 import { LiveTicker } from "@/components/app/live-ticker";
 
 export default function LandingPage() {
@@ -71,11 +72,15 @@ export default function LandingPage() {
                 </div>
 
                 <div className="lp-node" style={{ left: "4%", top: "12%" }}>
-                  <span className="orb">PEPE</span>
+                  <span className="orb">
+                    <TokenAvatar symbol="PEPE" size="lg" />
+                  </span>
                   <em>meme</em>
                 </div>
                 <div className="lp-node" style={{ right: "4%", top: "12%" }}>
-                  <span className="orb">AAPL</span>
+                  <span className="orb">
+                    <TokenAvatar symbol="AAPL" category="stock" size="lg" />
+                  </span>
                   <em>stock</em>
                 </div>
                 <div className="lp-node" style={{ left: "4%", bottom: "12%" }}>
@@ -83,7 +88,9 @@ export default function LandingPage() {
                   <em>Intents</em>
                 </div>
                 <div className="lp-node" style={{ right: "4%", bottom: "12%" }}>
-                  <span className="orb">NEAR</span>
+                  <span className="orb">
+                    <ChainLogo chain="near" size={40} />
+                  </span>
                   <em>lending</em>
                 </div>
               </div>

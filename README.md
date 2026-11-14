@@ -38,8 +38,14 @@ Journey C quotes live: 1B PEPE (Ethereum) → ~11.9 AAPLon (BNB Chain), ~63 s; 1
   or Solana wallet, settlement tracked from NEAR Intents.
 - **Portfolio, Markets, Activity:** positions with accrued interest and liquidation prices, every
   lending market with live price and utilization, the swap catalog, and a unified history.
-- A live price ticker runs across the top; logos come from web3icons (coins, chains, MIT) and
-  simple-icons (company brands, CC0).
+- A live price ticker runs across the top.
+
+**Logo credits:** coin and chain logos from the [Trust Wallet assets](https://github.com/trustwallet/assets)
+repository, NEAR meme coin logos from each token's on-chain NEP-148 metadata
+(`scripts/fetch-logos.mjs`); company logos from the Iconify `logos` set (CC0) and
+[simple-icons](https://simpleicons.org) (CC0), and the Amazon mark from
+[Font Awesome](https://fontawesome.com) (CC BY 4.0) (`scripts/gen-brand-logos.mjs`). All marks belong
+to their owners and are used only to identify the assets.
 
 ## How NEAR fits in
 

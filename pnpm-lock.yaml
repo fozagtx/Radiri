@@ -47,12 +47,6 @@ importers:
       '@walletconnect/ethereum-provider':
         specifier: 2.26.0
         version: 2.26.0(@react-native-async-storage/async-storage@1.24.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(bufferutil@4.2.0)(react@19.3.0)(utf-8-validate@6.0.6)))(@types/react@19.3.0)(bufferutil@4.2.0)(fastestsmallesttextencoderdecoder@1.0.22)(react@19.3.0)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.3.0))(utf-8-validate@6.0.6)(zod@4.6.7)
-      '@web3icons/core':
-        specifier: 4.0.59
-        version: 4.0.59
-      '@web3icons/react':
-        specifier: 4.1.25
-        version: 4.1.25(react@19.3.0)
       buffer:
         specifier: 6.0.3
         version: 6.0.3
@@ -102,6 +96,12 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
     devDependencies:
+      '@iconify-json/fa6-brands':
+        specifier: 1.2.6
+        version: 1.2.6
+      '@iconify-json/logos':
+        specifier: 1.2.20
+        version: 1.2.20
       '@tailwindcss/turbopack':
         specifier: 4.3.3
         version: 4.3.3
@@ -668,6 +668,15 @@ packages:
   '@humanwhocodes/retry@0.4.3':
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
+
+  '@iconify-json/fa6-brands@1.2.6':
+    resolution: {integrity: sha512-twL3X4KWcxAhbc1vz/mIDsVr+CAItk1/EIfxKUVQtpv6O4eydk5KNYqTZWdvJNHGInUgd6vKg21aWfVgb5DXEg==}
+
+  '@iconify-json/logos@1.2.20':
+    resolution: {integrity: sha512-HDSte2/+sgGNn9i/eYMiIRDbdigWxZe6EFauQGtxfRG/4sUtUBFgLIdxotKQysKNsFJlLYDFzPILOs3mh9viRQ==}
+
+  '@iconify/types@2.0.0':
+    resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -2953,17 +2962,6 @@ packages:
 
   '@walletconnect/window-metadata@1.0.1':
     resolution: {integrity: sha512-9koTqyGrM2cqFRW517BPY/iEtUDx2r1+Pwwu5m7sJ7ka79wi3EyqhqcICk/yDmv6jAS1rjKgTKXlEhanYjijcA==}
-
-  '@web3icons/common@0.11.54':
-    resolution: {integrity: sha512-zrVHK3E/spo2v2HOqgQWOsQb4X8aRpGOZYdfi3Ev228zw8f5X5D8Il4IegD+qR0a/AKZaoXa/HRvOqysKW3jBQ==}
-
-  '@web3icons/core@4.0.59':
-    resolution: {integrity: sha512-Czg1K9dXQl/VAcDdr5HYZ+WLFylYpbLoo61KURPR7Tl4r1u0iZpyATyswJcGBREK3GGy8URPiBgfo+49GXAZOQ==}
-
-  '@web3icons/react@4.1.25':
-    resolution: {integrity: sha512-ZD2EZuhij51HHIQQ5Gyen2JO+kp9jQa9rDO94LG/hhsVwpViherTXe7dO54apnulTZ60j4GLr2EjaubQS4jvBw==}
-    peerDependencies:
-      react: ^18.0.0 || ^19.0.0
 
   '@zag-js/accordion@1.47.0':
     resolution: {integrity: sha512-rXij62gBLdmhMYsTiygavOL83xP2MfmD8HpArtZxW30icQeXn1mgWq9xKL/DWqNEnYj/J9W2RpZk/7Q16ckN+Q==}
@@ -7475,6 +7473,16 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
+  '@iconify-json/fa6-brands@1.2.6':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/logos@1.2.20':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify/types@2.0.0': {}
+
   '@img/colour@1.1.0':
     optional: true
 
@@ -10784,17 +10792,6 @@ snapshots:
     dependencies:
       '@walletconnect/window-getters': 1.0.1
       tslib: 1.14.1
-
-  '@web3icons/common@0.11.54': {}
-
-  '@web3icons/core@4.0.59':
-    dependencies:
-      '@web3icons/common': 0.11.54
-
-  '@web3icons/react@4.1.25(react@19.3.0)':
-    dependencies:
-      '@web3icons/common': 0.11.54
-      react: 19.3.0
 
   '@zag-js/accordion@1.47.0':
     dependencies:
