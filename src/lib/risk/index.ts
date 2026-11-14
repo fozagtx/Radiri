@@ -1,6 +1,6 @@
 /**
  * TypeScript mirror of the Radiri lending contract math (docs/ARCHITECTURE.md section 4).
- * Pure, exact (bigint), no I/O. Used by the UI previews and the SimulatedLendingClient.
+ * Pure, exact (bigint), no I/O. Used by the UI previews, mirrored from the contract.
  */
 
 export * from "./fixed";

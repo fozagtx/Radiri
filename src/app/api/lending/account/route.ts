@@ -5,8 +5,7 @@ import { isValidAccountId } from "@/lib/near/rpc";
 
 /**
  * GET /api/lending/account?accountId=alice.testnet
- *   on-chain:   { mode: "near", account: AccountView | null, activity: ActivityEntry[] }
- *   simulation: { mode: "simulation" }
+ * -> { mode: "near", account: AccountView | null, activity: ActivityEntry[] }  (NEAR testnet)
  */
 export async function GET(request: Request) {
   await connection();
@@ -14,10 +13,6 @@ export async function GET(request: Request) {
   const accountId = new URL(request.url).searchParams.get("accountId")?.trim() ?? "";
   if (!isValidAccountId(accountId)) {
     return Response.json({ error: "accountId must be a valid NEAR account id, e.g. alice.testnet" }, { status: 400 });
-  }
-
-  if (!LENDING_CONTRACT_ID) {
-    return Response.json({ mode: "simulation" });
   }
 
   try {

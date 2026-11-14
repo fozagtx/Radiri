@@ -1,7 +1,7 @@
 /**
  * Action preview: the account state after a hypothetical deposit / withdraw / supply / borrow /
- * repay, plus every reason the contract would reject it. The SimulatedLendingClient executes
- * only actions this module accepts, and the UI shows the same reasons before the user signs.
+ * repay, plus every reason the contract would reject it. The UI shows the same reasons before the
+ * user signs, so a transaction the contract would reject is never sent.
  *
  * Checks mirror docs/ARCHITECTURE.md section 4:
  *   - global pause blocks deposit, supply, borrow and both withdrawals; repay stays open;

@@ -1,4 +1,5 @@
 import { NETWORK } from "@/lib/config";
+import { TESTNET_DEPLOYMENT } from "./deployment";
 import { viewCall } from "@/lib/near";
 import type { AssetCategory, AssetView, CatalogAsset, LendingCategory } from "@/types/protocol";
 import { LENDING_ASSETS, lendingAssetByTokenId } from "./lending-assets";
@@ -392,9 +393,9 @@ export function registryFromAssetViews(views: AssetView[], contractId: string, t
   };
 }
 
-/** Lending contract id from the environment, or null when the labelled simulation is in use. */
+/** The NEAR testnet lending contract (env override, else the committed deployment). */
 export function lendingContractId(): string | null {
-  return process.env.NEXT_PUBLIC_LENDING_CONTRACT_ID?.trim() || null;
+  return process.env.NEXT_PUBLIC_LENDING_CONTRACT_ID?.trim() || TESTNET_DEPLOYMENT.lendingContractId;
 }
 
 /**

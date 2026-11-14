@@ -38,6 +38,12 @@ importers:
       '@walletconnect/ethereum-provider':
         specifier: 2.26.0
         version: 2.26.0(@react-native-async-storage/async-storage@1.24.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(bufferutil@4.2.0)(react@19.3.0)(utf-8-validate@6.0.6)))(@types/react@19.3.0)(bufferutil@4.2.0)(fastestsmallesttextencoderdecoder@1.0.22)(react@19.3.0)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.3.0))(utf-8-validate@6.0.6)(zod@4.6.7)
+      '@web3icons/core':
+        specifier: 4.0.59
+        version: 4.0.59
+      '@web3icons/react':
+        specifier: 4.1.25
+        version: 4.1.25(react@19.3.0)
       buffer:
         specifier: 6.0.3
         version: 6.0.3
@@ -68,6 +74,9 @@ importers:
       server-only:
         specifier: 0.0.1
         version: 0.0.1
+      simple-icons:
+        specifier: 16.37.0
+        version: 16.37.0
       sonner:
         specifier: ^2.0.8
         version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -2866,6 +2875,17 @@ packages:
   '@walletconnect/window-metadata@1.0.1':
     resolution: {integrity: sha512-9koTqyGrM2cqFRW517BPY/iEtUDx2r1+Pwwu5m7sJ7ka79wi3EyqhqcICk/yDmv6jAS1rjKgTKXlEhanYjijcA==}
 
+  '@web3icons/common@0.11.54':
+    resolution: {integrity: sha512-zrVHK3E/spo2v2HOqgQWOsQb4X8aRpGOZYdfi3Ev228zw8f5X5D8Il4IegD+qR0a/AKZaoXa/HRvOqysKW3jBQ==}
+
+  '@web3icons/core@4.0.59':
+    resolution: {integrity: sha512-Czg1K9dXQl/VAcDdr5HYZ+WLFylYpbLoo61KURPR7Tl4r1u0iZpyATyswJcGBREK3GGy8URPiBgfo+49GXAZOQ==}
+
+  '@web3icons/react@4.1.25':
+    resolution: {integrity: sha512-ZD2EZuhij51HHIQQ5Gyen2JO+kp9jQa9rDO94LG/hhsVwpViherTXe7dO54apnulTZ60j4GLr2EjaubQS4jvBw==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+
   abitype@1.0.6:
     resolution: {integrity: sha512-MMSqYh4+C/aVqI2RQaWqbvI4Kxo5cQV40WQ4QFtDnNzCkqChm8MuENhElmynZlO0qUy/ObkEUaXtKqYnx1Kp3A==}
     peerDependencies:
@@ -5644,6 +5664,10 @@ packages:
   signal-exit@4.1.0:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
+
+  simple-icons@16.37.0:
+    resolution: {integrity: sha512-8mCJIhpMYOL9g13GW59EiL3sVXJnTEKGCTZFaekl9UQ3Qo0SwVjnLaJ82QiaH8BKBdouEDzrHMXIWh8cBIy48A==}
+    engines: {node: '>=0.12.18'}
 
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
@@ -10217,6 +10241,17 @@ snapshots:
       '@walletconnect/window-getters': 1.0.1
       tslib: 1.14.1
 
+  '@web3icons/common@0.11.54': {}
+
+  '@web3icons/core@4.0.59':
+    dependencies:
+      '@web3icons/common': 0.11.54
+
+  '@web3icons/react@4.1.25(react@19.3.0)':
+    dependencies:
+      '@web3icons/common': 0.11.54
+      react: 19.3.0
+
   abitype@1.0.6(typescript@5.9.3)(zod@3.25.76):
     optionalDependencies:
       typescript: 5.9.3
@@ -13395,6 +13430,8 @@ snapshots:
   signal-exit@3.0.7: {}
 
   signal-exit@4.1.0: {}
+
+  simple-icons@16.37.0: {}
 
   sisteransi@1.0.5: {}
 

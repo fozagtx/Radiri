@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, CircleSlash, FlaskConical, Info, Link2, ShieldAlert, XCircle } from "lucide-react";
+import { TokenAvatar } from "@/components/app/token-avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EXPLORER_URL } from "@/lib/config";
 import {
@@ -160,15 +161,20 @@ export function TestTokenTag() {
 export function AssetLabel({ asset, showCategory = false, compact = false }: { asset: AssetView; showCategory?: boolean; compact?: boolean }) {
   const reference = referenceOf(asset.config.token_id);
   return (
-    <span className="inline-flex min-w-0 flex-col">
-      <span className="inline-flex items-center gap-1.5">
-        <span className="font-medium">{asset.config.symbol}</span>
-        {!compact ? <TestTokenTag /> : null}
-        {showCategory ? <span className="text-[11px] text-muted-foreground">{CATEGORY_LABEL[asset.config.category]}</span> : null}
+    <span className="inline-flex min-w-0 items-center gap-2.5">
+      <TokenAvatar symbol={asset.config.symbol} category={asset.config.category} size={compact ? "sm" : "md"} />
+      <span className="inline-flex min-w-0 flex-col">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="font-medium">{asset.config.symbol}</span>
+          {!compact ? <TestTokenTag /> : null}
+        </span>
+        {!compact ? (
+          <span className="text-[11px] text-muted-foreground">
+            {showCategory ? `${CATEGORY_LABEL[asset.config.category]} · ` : ""}
+            {reference ? `mirrors ${reference.symbol}` : ""}
+          </span>
+        ) : null}
       </span>
-      {!compact && reference ? (
-        <span className="text-[11px] text-muted-foreground">mirrors {reference.symbol} price</span>
-      ) : null}
     </span>
   );
 }

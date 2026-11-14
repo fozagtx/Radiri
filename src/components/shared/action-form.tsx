@@ -122,15 +122,11 @@ export function ActionForm({
       ) : (
         <Button type="submit" size="lg" disabled={!preview?.ok || submitting} className="w-full">
           {submitting ? <Loader2 className="animate-spin" aria-hidden /> : null}
-          {submitting
-            ? lending.mode === "near"
-              ? "Waiting for wallet…"
-              : "Simulating…"
-            : `${copy.verb} ${symbol}${lending.mode === "simulation" ? " (simulation)" : ""}`}
+          {submitting ? "Waiting for wallet…" : `${copy.verb} ${symbol}`}
         </Button>
       )}
 
-      {lending.mode === "near" && !needsWallet ? (
+      {!needsWallet ? (
         <p className="text-[11px] text-muted-foreground">
           Your wallet signs every step in one prompt: a one-time 0.1 NEAR storage deposit if this account is new to the
           contract{kind === "borrow" || kind.startsWith("withdraw") ? ", a token storage deposit if you have never held this token," : ""} then
@@ -142,8 +138,7 @@ export function ActionForm({
         {outcome?.kind === "success" ? (
           <Note tone="good">
             <p className="font-medium">
-              {copy.done}
-              {outcome.result.mode === "simulation" ? " in the simulation · no on-chain transaction" : " on chain"}
+              {copy.done} on NEAR testnet
             </p>
             {outcome.result.notes.map((note) => (
               <p key={note}>{note}</p>

@@ -75,30 +75,23 @@ export function SummaryTiles({ totals }: { totals: PortfolioTotals | null }) {
   );
 }
 
-/** Market-level problems: contract unreadable, or (simulation) reference prices unavailable. */
+/** Market-level problems: contract unreadable, or on-chain oracle prices stale. */
 export function MarketNotice() {
-  const { marketsError, priceFeed, mode } = useLending();
+  const { marketsError, assets, oracle } = useLending();
   if (marketsError) {
-    return <Note tone="bad">Lending markets could not be loaded: {marketsError}</Note>;
+    return <Note tone="bad">The lending contract could not be read: {marketsError}</Note>;
   }
-  if (mode !== "simulation" || !priceFeed) return null;
-  if (priceFeed.error) {
-    return (
-      <Note tone="bad">
-        Reference prices are unavailable ({priceFeed.error}). Without a fresh price no borrow is allowed, exactly as the
-        contract&apos;s oracle would behave.
-      </Note>
-    );
+  const stale = assets.filter((asset) => !asset.price_fresh).map((asset) => asset.config.symbol);
+  if (stale.length === 0) return null;
+  if (oracle.refreshing) {
+    return <Note tone="neutral">Pushing fresh 1Click prices to the contract oracle for {stale.join(", ")}…</Note>;
   }
-  if (priceFeed.missing.length > 0) {
-    return (
-      <Note tone="warn">
-        No reference price for {priceFeed.missing.map((item) => `${item.symbol} (${item.reason})`).join(", ")}. Those test
-        tokens cannot be borrowed or used to back a borrow until a price arrives.
-      </Note>
-    );
-  }
-  return null;
+  return (
+    <Note tone="warn">
+      On-chain price for {stale.join(", ")} is stale, so the contract blocks borrowing and liquidation against it until a
+      fresh price is reported{oracle.error ? ` (automatic refresh failed: ${oracle.error})` : ""}.
+    </Note>
+  );
 }
 
 /** Explains whose positions are shown, and asks for a wallet when the chain needs one. */
@@ -106,7 +99,7 @@ export function AccountNotice() {
   const lending = useLending();
   const wallet = useNearWallet();
 
-  if (lending.mode === "near" && !lending.walletAccountId) {
+  if (!lending.walletAccountId) {
     return (
       <Note tone="neutral">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -116,15 +109,6 @@ export function AccountNotice() {
             Connect NEAR wallet
           </Button>
         </div>
-      </Note>
-    );
-  }
-
-  if (lending.isLocalSimAccount) {
-    return (
-      <Note tone="neutral">
-        Simulated positions for a local browser account. Connect a NEAR wallet to keep a separate simulation per account
-        (still nothing is signed).
       </Note>
     );
   }

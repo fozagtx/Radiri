@@ -1,7 +1,7 @@
 "use client";
 
-import { FlaskConical, Link2, Loader2 } from "lucide-react";
-import { LENDING_CONTRACT_ID, LENDING_MODE, NETWORK } from "@/lib/config";
+import { Link2, Loader2 } from "lucide-react";
+import { LENDING_CONTRACT_ID, NETWORK } from "@/lib/config";
 import { useEvmWallet } from "@/lib/wallets/evm";
 import { useNearWallet } from "@/lib/wallets/near";
 import { useSolanaWallet } from "@/lib/wallets/solana";
@@ -11,32 +11,18 @@ function short(value: string): string {
   return value.length > 18 ? `${value.slice(0, 8)}…${value.slice(-6)}` : value;
 }
 
-/** Permanent lending mode badge: "On-chain · <contract>" or "Simulation". */
+/** Lending network badge: the live NEAR testnet contract. */
 export function ModeBadge({ className }: { className?: string }) {
-  if (LENDING_MODE === "near") {
-    return (
-      <span
-        title={`Lending reads and writes ${LENDING_CONTRACT_ID} on NEAR ${NETWORK}`}
-        className={cn(
-          "inline-flex max-w-full items-center gap-1.5 rounded-full border border-emerald-600/30 bg-emerald-600/8 px-2.5 py-1 font-mono text-[10px] text-emerald-800 dark:text-emerald-300",
-          className,
-        )}
-      >
-        <Link2 className="size-3 shrink-0" aria-hidden />
-        <span className="truncate">On-chain · {LENDING_CONTRACT_ID}</span>
-      </span>
-    );
-  }
   return (
     <span
-      title="No lending contract configured: browser-local simulation, no on-chain transaction"
+      title={`Lending reads and writes ${LENDING_CONTRACT_ID} on NEAR ${NETWORK}`}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-amber-500/45 bg-amber-500/10 px-2.5 py-1 font-mono text-[10px] text-amber-900 dark:text-amber-200",
+        "inline-flex max-w-full items-center gap-1.5 rounded-full border border-emerald-600/30 bg-emerald-600/8 px-2.5 py-1 font-mono text-[10px] text-emerald-800 dark:text-emerald-300",
         className,
       )}
     >
-      <FlaskConical className="size-3 shrink-0" aria-hidden />
-      Simulation
+      <Link2 className="size-3 shrink-0" aria-hidden />
+      <span className="truncate">NEAR {NETWORK} · {LENDING_CONTRACT_ID}</span>
     </span>
   );
 }

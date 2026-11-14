@@ -27,14 +27,12 @@ const KIND_ICON: Record<ActivityItem["kind"], typeof HandCoins> = {
 };
 
 const SOURCE_LABEL: Record<ActivityItem["source"], string> = {
-  "lending-contract": "on-chain",
-  simulation: "simulation",
+  "lending-contract": "testnet",
   "1click": "1Click",
 };
 
 const SOURCE_TONE: Record<ActivityItem["source"], Tone> = {
   "lending-contract": "good",
-  simulation: "warn",
   "1click": "neutral",
 };
 

@@ -43,7 +43,7 @@ export function ActivityView() {
     <>
       <PageHeader
         title="Activity"
-        description="Deposits, withdrawals, borrows, repayments and liquidations from the lending contract (or the simulation), plus the 1Click swaps started in this browser."
+        description="Deposits, withdrawals, borrows, repayments and liquidations from the NEAR testnet lending contract, plus the 1Click swaps started in this browser."
       />
       <ModeBanner />
       <div className="mb-3">

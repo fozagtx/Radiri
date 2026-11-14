@@ -1,5 +1,5 @@
 /**
- * Unified activity feed (ActivityItem) from lending activity (contract or simulation) and 1Click
+ * Unified activity feed (ActivityItem) from lending contract activity and 1Click
  * swap records. Pure mapping, no I/O.
  */
 
@@ -29,7 +29,7 @@ export interface TokenInfo {
 
 export function lendingActivityItems(
   entries: ActivityEntry[],
-  options: { source: "lending-contract" | "simulation"; tokenInfo: (tokenId: string) => TokenInfo | undefined },
+  options: { source: "lending-contract"; tokenInfo: (tokenId: string) => TokenInfo | undefined },
 ): ActivityItem[] {
   return entries.map((entry, index) => {
     const info = options.tokenInfo(entry.token_id);

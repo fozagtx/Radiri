@@ -217,7 +217,7 @@ export function MarketsView() {
           description={
             lending.mode === "near"
               ? `Read from ${lending.contractId} on NEAR ${NETWORK}. Each asset's collateral and borrow eligibility is set on chain.`
-              : "Simulated pools seeded locally, with the same risk parameters the contract is deployed with. Test tokens have no value."
+              : ""
           }
         >
           <RadiriMarkets />
