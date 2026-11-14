@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert, Badge, Box, Card, Flex, Heading, HStack, Link, Progress, Skeleton, Stack, Stat, Text } from "@chakra-ui/react";
-import { CircleSlash, ExternalLink, FlaskConical } from "lucide-react";
+import { CircleSlash, ExternalLink } from "lucide-react";
 import { TokenAvatar } from "@/components/app/token-avatar";
 import { EXPLORER_URL } from "@/lib/config";
 import { type BlockReason, formatAge, formatHealthFactor, formatPriceWad, HEALTH_BAND_LABEL, healthBand, type PriceCheck } from "@/lib/risk";
@@ -136,8 +136,7 @@ export function LimitMeter({ usedBps, label = "Borrow limit used" }: { usedBps: 
 
 export function TestTokenTag() {
   return (
-    <Badge colorPalette="orange" variant="outline" size="xs" borderRadius="full" gap="1" title="Testnet test token: no value">
-      <FlaskConical size={10} aria-hidden />
+    <Badge colorPalette="orange" variant="outline" size="xs" borderRadius="full" title="Testnet test token: no value">
       test
     </Badge>
   );

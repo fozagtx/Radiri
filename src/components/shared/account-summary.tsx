@@ -1,7 +1,6 @@
 "use client";
 
 import { Box, Button, Flex, SimpleGrid, Stack, Text } from "@chakra-ui/react";
-import { Wallet } from "lucide-react";
 import { BPS, formatUsdWad, mulDivUp, pricedAsset, valueWad, ZERO } from "@/lib/risk";
 import { useNearWallet } from "@/lib/wallets/near";
 import { HealthValue, LimitMeter, Note, StatTile } from "./bits";
@@ -112,7 +111,6 @@ export function AccountNotice() {
           </Text>
         </Box>
         <Button size="sm" borderRadius="full" bg="ink" color="white" _hover={{ bg: "#2a2a2a" }} onClick={() => void wallet.signIn()} disabled={!wallet.ready || wallet.connecting}>
-          <Wallet size={15} aria-hidden />
           Connect NEAR wallet
         </Button>
       </Flex>

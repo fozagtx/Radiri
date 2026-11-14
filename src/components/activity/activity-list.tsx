@@ -4,7 +4,6 @@ import {
   ArrowDownToLine,
   ArrowLeftRight,
   ArrowUpFromLine,
-  ExternalLink,
   Gavel,
   HandCoins,
   PiggyBank,
@@ -80,7 +79,6 @@ export function ActivityList({ items, empty }: { items: ActivityItem[]; empty: R
               <Button asChild size="2xs" variant="outline" borderRadius="full" flexShrink={0}>
                 <a href={item.explorerUrl} target="_blank" rel="noreferrer" aria-label={`Open ${item.title} in explorer`}>
                   {item.source === "1click" ? "Explorer" : "Block"}
-                  <ExternalLink size={11} aria-hidden />
                 </a>
               </Button>
             ) : null}
