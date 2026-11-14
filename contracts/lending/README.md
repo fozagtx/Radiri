@@ -40,7 +40,7 @@ The full interface (units, formulas, JSON views, messages) is in
 
 ```sh
 cd contracts
-cargo test --workspace --lib    # 52 lending + 9 test-token + 17 snapshot-registry unit tests
+cargo test --workspace --lib    # 52 lending + 9 test-token unit tests
 ```
 
 `src/vector_tests.rs` checks the contract math against `tests/vectors/lending-math.json`, which is
@@ -58,27 +58,25 @@ cd contracts/lending && cargo near build non-reproducible-wasm --no-abi
 # -> contracts/target/near/radiri_lending/radiri_lending.wasm (about 317 KB)
 ```
 
-## Deploy to testnet
+## Deployed on testnet
 
-`scripts/deploy-lending.sh` does everything with near-cli-rs, signing with keys from your
-keychain. It refuses any account that does not end in `.testnet`.
+| Account | Role |
+| --- | --- |
+| `lending.radiri-markets.testnet` | lending contract |
+| `tpepe`, `twif`, `tshib`, `tbrett`, `taapl`, `ttsla`, `tnvda` `.radiri-markets.testnet` | test tokens (no value) |
+| `oracle.radiri-markets.testnet` | price reporter; its app key can only call `report_prices` (1 NEAR allowance) |
+| `radiri-markets.testnet` | owner and guardian |
 
-```sh
-OWNER=<you>.testnet scripts/deploy-lending.sh
-```
+`scripts/testnet-deploy.ts` (`pnpm deploy:testnet [owner.testnet]`) did all of it with near-api-js: owner
+account from the NEAR testnet faucet, sub-accounts, both wasm files, every `register_asset`, token
+registrations, seed liquidity, and the reporter key. It refuses non-testnet accounts and resumes if
+interrupted. Keys stay outside the repository (`~/.near-credentials/testnet/`, `.env.local`).
 
-1. Builds both wasm files.
-2. Creates and initialises seven test tokens (`tpepe`, `twif`, `tshib`, `tbrett`, `taapl`, `ttsla`,
-   `tnvda` under `$OWNER`), each named "Radiri Test … (no value)".
-3. Creates `lending.$OWNER`, initialised with `$OWNER` as owner and guardian and `oracle.$OWNER` as
-   the only price reporter.
-4. Registers every asset from `assets.testnet.json` (generated from `src/config/lending-assets.ts`),
-   registers the lending contract on each token, and seeds each pool with test liquidity.
-5. Creates `oracle.$OWNER` and adds a function-call key that can only call `report_prices`, with a
-   1 NEAR allowance. That key cannot register assets, force prices or pause.
+`scripts/testnet-journeys.ts` (`pnpm journeys:testnet`) replays journeys A and B as real transactions
+from a fresh faucet account: mint tPEPE, deposit, borrow tAAPL; mint tNVDA, deposit, borrow tPEPE.
 
-Then set `NEXT_PUBLIC_LENDING_CONTRACT_ID=lending.$OWNER` and the oracle key in `.env.local` and
-run `pnpm oracle:push` every minute to report live 1Click prices.
+Prices: `pnpm oracle:push`, or automatically through `POST /api/oracle/refresh` whenever the app sees
+a stale price.
 
 ## Risk parameters
 

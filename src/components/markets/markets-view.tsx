@@ -1,34 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { TokenAvatar } from "@/components/app/token-avatar";
 import { MarketNotice } from "@/components/shared/account-summary";
-import { AssetLabel, Note, PageHeader, Pill, PriceTag, Section, SkeletonRows } from "@/components/shared/bits";
-import { amountOf } from "@/components/shared/format";
+import { Note, Pill, SkeletonRows } from "@/components/shared/bits";
+import { amountOf, referenceOf } from "@/components/shared/format";
 import { useLending } from "@/components/shared/lending-provider";
 import { ModeBanner } from "@/components/shared/mode-banner";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { NETWORK } from "@/lib/config";
-import { formatBpsPercent, pricedAsset, u128OrZero, ZERO } from "@/lib/risk";
+import { chainName } from "@/lib/intents/chains";
+import { formatAge, formatBpsPercent, formatPriceWad, pricedAsset } from "@/lib/risk";
 import type { RheaLendingSnapshot } from "@/lib/rhea/lending";
-import type { CatalogAsset } from "@/types/protocol";
+import { cn } from "@/lib/utils";
+import type { AssetView, CatalogAsset, LendingCategory } from "@/types/protocol";
 
 type Load<T> = { state: "loading" } | { state: "ready"; data: T } | { state: "error"; error: string };
-
-async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: "no-store" });
-  const body = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
-  if (!res.ok || !body) throw new Error(body?.error ?? `HTTP ${res.status}`);
-  return body;
-}
 
 function useJson<T>(url: string): Load<T> {
   const [load, setLoad] = useState<Load<T>>({ state: "loading" });
   useEffect(() => {
     let cancelled = false;
-    getJson<T>(url).then(
-      (data) => !cancelled && setLoad({ state: "ready", data }),
-      (error: unknown) => !cancelled && setLoad({ state: "error", error: error instanceof Error ? error.message : String(error) }),
-    );
+    fetch(url, { cache: "no-store" })
+      .then(async (res) => {
+        const body = (await res.json()) as T & { error?: string };
+        if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+        if (!cancelled) setLoad({ state: "ready", data: body });
+      })
+      .catch((error: unknown) => !cancelled && setLoad({ state: "error", error: error instanceof Error ? error.message : String(error) }));
     return () => {
       cancelled = true;
     };
@@ -37,203 +34,158 @@ function useJson<T>(url: string): Load<T> {
 }
 
 function usd(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "–";
+  if (value === null || !Number.isFinite(value) || value <= 0) return "–";
   if (value >= 1) return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
   return `$${value.toPrecision(3)}`;
 }
 
-/** Exact decimal string from RHEA -> grouped, two decimals (display only). */
-function amount(value: string | null): string {
-  if (value === null) return "–";
-  const number = Number(value);
-  return Number.isFinite(number) ? number.toLocaleString("en-US", { maximumFractionDigits: 2 }) : value;
-}
-
-function Flag({ on, label }: { on: boolean; label: string }) {
-  return <Pill tone={on ? "good" : "neutral"}>{on ? label : `no ${label}`}</Pill>;
-}
-
-function RadiriMarkets() {
-  const lending = useLending();
-  if (lending.marketsState !== "ready" || !lending.market) return <SkeletonRows rows={4} />;
-  const { market } = lending;
+function MarketCard({ asset, index }: { asset: AssetView; index: number }) {
+  const { market } = useLending();
+  const check = market ? pricedAsset(market.assets, asset.config.token_id, market.nowMs).price : null;
+  const reference = referenceOf(asset.config.token_id);
+  const price = asset.price ? BigInt(asset.price.price_wad) : null;
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Asset</TableHead>
-          <TableHead>Eligibility</TableHead>
-          <TableHead className="text-right">LTV / liq. / bonus</TableHead>
-          <TableHead className="text-right">Pool cash</TableHead>
-          <TableHead className="text-right">Borrowed</TableHead>
-          <TableHead className="text-right">Utilization</TableHead>
-          <TableHead className="text-right">Borrow / supply APR</TableHead>
-          <TableHead>Oracle price</TableHead>
-          <TableHead className="text-right">Collateral cap</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {lending.assets.map((asset) => {
-          const check = pricedAsset(market.assets, asset.config.token_id, market.nowMs).price;
-          const cap = u128OrZero(asset.config.collateral_cap);
-          return (
-            <TableRow key={asset.config.token_id}>
-              <TableCell>
-                <AssetLabel asset={asset} showCategory />
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  <Flag on={asset.config.can_collateralize} label="collateral" />
-                  <Flag on={asset.config.can_borrow} label="borrow" />
-                  {asset.config.paused ? <Pill tone="bad">paused</Pill> : null}
-                </div>
-              </TableCell>
-              <TableCell className="text-right font-mono tabular-nums">
-                {formatBpsPercent(asset.config.ltv_bps, 0)} / {formatBpsPercent(asset.config.liquidation_threshold_bps, 0)} /{" "}
-                {formatBpsPercent(asset.config.liquidation_bonus_bps, 0)}
-              </TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{amountOf(asset, asset.cash, 2)}</TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{amountOf(asset, asset.total_borrowed, 2)}</TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{formatBpsPercent(asset.utilization_bps)}</TableCell>
-              <TableCell className="text-right font-mono tabular-nums">
-                {formatBpsPercent(asset.borrow_apr_bps)} / {formatBpsPercent(asset.supply_apr_bps)}
-              </TableCell>
-              <TableCell>
-                <PriceTag asset={asset} check={check} />
-              </TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{cap === ZERO ? "none" : amountOf(asset, cap, 0)}</TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+    <div
+      className="radiri-rise flex flex-col gap-4 rounded-[24px] border border-foreground/10 bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-30px_rgba(25,25,25,0.45)]"
+      style={{ animationDelay: `${index * 40}ms` }}
+    >
+      <div className="flex items-center gap-3">
+        <TokenAvatar symbol={asset.config.symbol} category={asset.config.category} size="lg" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[16px] font-semibold tracking-tight">{asset.config.symbol}</span>
+            <Pill tone="warn">test</Pill>
+          </div>
+          <span className="text-[12px] text-muted-foreground">mirrors {reference?.symbol ?? "–"}</span>
+        </div>
+        <div className="text-right">
+          <div className="font-mono text-[15px] tabular-nums">{formatPriceWad(price)}</div>
+          <div className={cn("text-[11px]", check?.fresh ? "text-emerald-700 dark:text-emerald-400" : "text-destructive")}>
+            {check?.fresh ? "fresh" : "stale"} · {formatAge(check?.ageMs ?? null)}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-1 flex justify-between text-[11.5px] text-muted-foreground">
+          <span>Utilization</span>
+          <span className="font-mono">{formatBpsPercent(asset.utilization_bps)}</span>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-foreground/8">
+          <div className="h-full rounded-full bg-foreground/70 transition-[width] duration-700" style={{ width: `${Math.min(100, asset.utilization_bps / 100)}%` }} />
+        </div>
+      </div>
+
+      <dl className="grid grid-cols-3 gap-2 text-[12px]">
+        <div>
+          <dt className="text-muted-foreground">Borrow APR</dt>
+          <dd className="font-mono text-[14px]">{formatBpsPercent(asset.borrow_apr_bps)}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Supply APR</dt>
+          <dd className="font-mono text-[14px]">{formatBpsPercent(asset.supply_apr_bps)}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Max LTV</dt>
+          <dd className="font-mono text-[14px]">{formatBpsPercent(asset.config.ltv_bps, 0)}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Liquidation</dt>
+          <dd className="font-mono">{formatBpsPercent(asset.config.liquidation_threshold_bps, 0)}</dd>
+        </div>
+        <div className="col-span-2">
+          <dt className="text-muted-foreground">Available to borrow</dt>
+          <dd className="truncate font-mono">{amountOf(asset, asset.cash, 2)}</dd>
+        </div>
+      </dl>
+      <div className="flex gap-1.5">
+        {asset.config.can_collateralize ? <Pill tone="good">collateral</Pill> : null}
+        {asset.config.can_borrow ? <Pill tone="good">borrowable</Pill> : null}
+        {asset.config.paused ? <Pill tone="bad">paused</Pill> : null}
+      </div>
+    </div>
+  );
+}
+
+function LendingMarkets({ category }: { category: LendingCategory }) {
+  const lending = useLending();
+  if (lending.marketsState !== "ready") return <SkeletonRows rows={3} />;
+  const assets = lending.assets.filter((asset) => asset.config.category === category);
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {assets.map((asset, index) => (
+        <MarketCard key={asset.config.token_id} asset={asset} index={index} />
+      ))}
+    </div>
   );
 }
 
 function SwapAssets() {
-  const memes = useJson<{ assets: CatalogAsset[] }>("/api/assets?category=meme&eligible=swap");
-  const stocks = useJson<{ assets: CatalogAsset[] }>("/api/assets?category=stock&eligible=swap");
-  if (memes.state === "loading" || stocks.state === "loading") return <SkeletonRows rows={4} />;
-  if (memes.state === "error" || stocks.state === "error") {
-    return <Note tone="bad">1Click catalog unavailable: {memes.state === "error" ? memes.error : stocks.state === "error" ? stocks.error : ""}</Note>;
-  }
-  const rows = [...stocks.data.assets, ...memes.data.assets];
+  const catalog = useJson<{ assets: CatalogAsset[] }>("/api/assets?eligible=swap");
+  if (catalog.state === "loading") return <SkeletonRows rows={4} />;
+  if (catalog.state === "error") return <Note tone="bad">NEAR Intents catalog unavailable: {catalog.error}</Note>;
+  const groups: { title: string; rows: CatalogAsset[] }[] = [
+    { title: "Tokenized stocks", rows: catalog.data.assets.filter((asset) => asset.category === "stock" && asset.priceUsd) },
+    { title: "Meme coins", rows: catalog.data.assets.filter((asset) => asset.category === "meme" && asset.priceUsd) },
+  ];
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Asset</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead>Chain</TableHead>
-          <TableHead className="text-right">1Click price</TableHead>
-          <TableHead>Eligibility</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((asset) => (
-          <TableRow key={asset.id}>
-            <TableCell>
-              <span className="font-medium">{asset.symbol}</span>
-              {asset.name ? <span className="ml-1.5 text-[11px] text-muted-foreground">{asset.name}</span> : null}
-            </TableCell>
-            <TableCell className="text-xs">{asset.category === "stock" ? "Tokenized stock" : "Meme coin"}</TableCell>
-            <TableCell className="font-mono text-xs">{asset.chain}</TableCell>
-            <TableCell className="text-right font-mono tabular-nums">{usd(asset.priceUsd)}</TableCell>
-            <TableCell>
-              <div className="flex flex-wrap gap-1">
-                <Flag on={asset.eligibility.swap} label="swap" />
-                <Flag on={asset.eligibility.collateral} label="collateral" />
-                <Flag on={asset.eligibility.borrow} label="borrow" />
+    <div className="flex flex-col gap-5">
+      {groups.map((group) => (
+        <div key={group.title}>
+          <h3 className="mb-2 text-[13px] font-semibold text-muted-foreground">{group.title}</h3>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {group.rows.map((asset) => (
+              <div key={asset.id} className="flex items-center gap-3 rounded-2xl border border-foreground/8 bg-card px-3 py-2.5">
+                <TokenAvatar symbol={asset.symbol} category={asset.category} chain={asset.chain} size="md" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13.5px] font-semibold">{asset.symbol}</div>
+                  <div className="truncate text-[11px] text-muted-foreground">{chainName(asset.chain)}</div>
+                </div>
+                <span className="font-mono text-[12.5px] tabular-nums">{usd(asset.priceUsd)}</span>
               </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
 function RheaReference() {
   const rhea = useJson<RheaLendingSnapshot>("/api/rhea/lending");
-  if (rhea.state === "loading") return <SkeletonRows rows={4} />;
-  if (rhea.state === "error") return <Note tone="bad">RHEA Lending could not be read: {rhea.error}</Note>;
-  const reserves = rhea.data.reserves.filter((reserve) => reserve.canUseAsCollateral || reserve.canBorrow);
+  if (rhea.state !== "ready") return null;
+  const lendable = rhea.data.reserves.filter((reserve) => reserve.canUseAsCollateral || reserve.canBorrow).length;
   return (
-    <div className="flex flex-col gap-2">
-      <Note tone="neutral">
-        {rhea.data.reserves.length} reserves on <span className="font-mono">{rhea.data.contractId}</span>. None of them is a meme coin
-        or a tokenized stock, which is why Radiri runs its own lending markets for those assets.
-      </Note>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Asset</TableHead>
-            <TableHead>Eligibility</TableHead>
-            <TableHead className="text-right">Supplied</TableHead>
-            <TableHead className="text-right">Borrowed</TableHead>
-            <TableHead className="text-right">Utilization</TableHead>
-            <TableHead className="text-right">Borrow APY (derived)</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {reserves.map((reserve) => (
-            <TableRow key={reserve.tokenId}>
-              <TableCell>
-                <span className="font-medium">{reserve.symbol}</span>
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  <Flag on={reserve.canUseAsCollateral} label="collateral" />
-                  <Flag on={reserve.canBorrow} label="borrow" />
-                </div>
-              </TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{reserve.suppliedUsd === null ? `${amount(reserve.supplied)} ${reserve.symbol}` : usd(reserve.suppliedUsd)}</TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{reserve.borrowedUsd === null ? `${amount(reserve.borrowed)} ${reserve.symbol}` : usd(reserve.borrowedUsd)}</TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{(reserve.utilization * 100).toFixed(2)}%</TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{(reserve.borrowApyDerived * 100).toFixed(2)}%</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <p className="text-[12px] text-muted-foreground">
+      For reference, RHEA Lending on NEAR mainnet (<span className="font-mono">{rhea.data.contractId}</span>) has {rhea.data.reserves.length} reserves, {lendable} of
+      them usable as collateral or borrowable, and none is a meme coin or a tokenized stock. That gap is what Radiri&apos;s markets fill.
+    </p>
   );
 }
 
 export function MarketsView() {
-  const lending = useLending();
   return (
-    <>
-      <PageHeader
-        title="Markets"
-        description="Radiri lending markets for meme coins and tokenized stocks, the assets 1Click can swap, and RHEA Lending as a reference."
-      />
+    <div className="flex flex-col gap-6">
+      <div className="radiri-rise">
+        <h1 className="font-display text-[34px] leading-tight sm:text-[40px]">Markets</h1>
+        <p className="text-[13.5px] text-muted-foreground">Live lending markets on NEAR testnet and every meme coin and stock you can swap through NEAR Intents.</p>
+      </div>
       <ModeBanner />
-      <div className="mb-3">
-        <MarketNotice />
-      </div>
-      <div className="flex flex-col gap-3">
-        <Section
-          title="Radiri lending markets"
-          description={
-            lending.mode === "near"
-              ? `Read from ${lending.contractId} on NEAR ${NETWORK}. Each asset's collateral and borrow eligibility is set on chain.`
-              : ""
-          }
-        >
-          <RadiriMarkets />
-        </Section>
+      <MarketNotice />
 
-        <Section
-          title="Tokenized stocks and meme coins on 1Click"
-          description="Live NEAR Intents catalog. Swap eligibility comes from 1Click; collateral and borrow eligibility only from the lending contract."
-        >
-          <SwapAssets />
-        </Section>
-
-        <Section title="RHEA Lending · NEAR mainnet · reference" description="Live reserves read from the RHEA Lending contract, read-only.">
-          <RheaReference />
-        </Section>
-      </div>
-    </>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[17px] font-semibold tracking-tight">Meme coin markets</h2>
+        <LendingMarkets category="meme" />
+      </section>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[17px] font-semibold tracking-tight">Tokenized stock markets</h2>
+        <LendingMarkets category="stock" />
+      </section>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[17px] font-semibold tracking-tight">Swap catalog · NEAR Intents</h2>
+        <SwapAssets />
+      </section>
+      <RheaReference />
+    </div>
   );
 }

@@ -175,8 +175,8 @@ export function TokenPair({
 }) {
   return (
     <span className="inline-flex items-center">
-      <TokenAvatar symbol={from.symbol} category={from.category} size={size} className="rounded-full ring-2 ring-card" />
-      <TokenAvatar symbol={to.symbol} category={to.category} size={size} className="-ml-3 ring-2 ring-card" />
+      <TokenAvatar symbol={from.symbol} category={from.category} size={size} />
+      <TokenAvatar symbol={to.symbol} category={to.category} size={size} className="-ml-2.5 drop-shadow-[-2px_0_0_var(--card)]" />
     </span>
   );
 }

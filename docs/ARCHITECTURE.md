@@ -16,10 +16,8 @@ Radiri started as a cross-chain **stablecoin** route monitor: dry-run quotes fro
 | `src/lib/radiri/adapters/oneclick.ts` 1Click `/v0/quote` (dry) | stable pairs only | **MODIFY**: generalise to any 1Click asset, add live (non-dry) quotes, status, deposit submit |
 | `src/lib/radiri/catalog.ts` 1Click `/v0/tokens` cache | filtered to stablecoins | **MODIFY**: classify every token (meme / stock / stable / major / rwa / other) |
 | `src/lib/radiri/adapters/rhea.ts` RHEA Smart Router | NEAR-chain quotes | **KEEP** as a NEAR-side route source |
-| Route compare engine, matrix, opportunities, AI analyst | stable monitor | **KEEP**, moved to `/routes` |
-| MCP connection page | agent access | **REPLACE**: page and nav link removed; the `/api/mcp` endpoint stays, unlinked |
-| `contract/` snapshot registry (near-sdk 5.30.1, deployed `radiri.testnet`) | on-chain quote history | **KEEP**, moved to `contracts/snapshot-registry` |
-| `scripts/monitor.ts` | writes snapshots | **KEEP** |
+| Stablecoin route compare engine, matrix, opportunities, AI analyst, MCP endpoint | stable monitor | **REMOVED**: stablecoins are not part of this product |
+| `contract/` stablecoin snapshot registry and `scripts/monitor.ts` | on-chain quote history | **REMOVED** with the route monitor |
 | `@near-wallet-selector` + MyNearWallet | read-only sign-in | **REPLACE** with NEAR Connect (`@hot-labs/near-connect`) |
 | No EVM/Solana wallets | — | **BUILD**: wagmi/viem (injected + Reown WalletConnect when a project id is set), Solana wallet adapter |
 | No lending, risk, oracle, liquidation, portfolio, activity | — | **BUILD** |
@@ -67,9 +65,12 @@ Checked live on 2026-11-13 from this repository's environment.
 - **Eligibility is explicit and independent.** Swap eligibility = present in the live 1Click
   catalog. Collateral and borrow eligibility = registered on the lending contract with
   `can_collateralize` / `can_borrow`. One never implies the other.
-- **Simulation is separate and labelled.** Without `NEXT_PUBLIC_LENDING_CONTRACT_ID` the lending UI
-  runs a `SimulatedLendingClient` (browser-local state, same risk engine, live prices) behind a
-  permanent "Simulation, no on-chain transaction" banner. It is never presented as a real position.
+- **Lending is live on NEAR testnet.** `src/config/deployment.ts` pins the deployed contract
+  (`lending.radiri-markets.testnet`, test tokens under `radiri-markets.testnet`); every position is
+  read from it and every action is a transaction the user signs. There is no simulation.
+- **Prices stay fresh on demand.** When the app sees a stale on-chain price it calls
+  `POST /api/oracle/refresh`, which pushes live 1Click prices with the reporter's function-call key
+  (it can only call `report_prices`). `pnpm oracle:push` does the same from a terminal.
 
 ## 4. Lending contract interface (`contracts/lending`)
 
@@ -223,19 +224,20 @@ reference from 1Click (PEPE, $WIF, SHIB, BRETT; AAPLon, TSLAon, NVDAon). The UI 
 ```
 src/app/(site)/page.tsx               landing (brand kept)
 src/app/(app)/layout.tsx              app shell: sidebar + mobile nav
-src/app/(app)/{overview,borrow,swap,portfolio,markets,activity,routes}/page.tsx
+src/app/(app)/{overview,borrow,swap,portfolio,markets,activity}/page.tsx
 src/app/api/assets                    classified 1Click catalog + lending eligibility
 src/app/api/swaps/{quote,status,submit}
 src/app/api/pricing                   price observations with source + age
 src/app/api/lending/{markets,account} lending contract views (server-side RPC)
+src/app/api/oracle/refresh         pushes live 1Click prices when on-chain prices are stale
 src/app/api/rhea/lending              RHEA Lending reserves, read-only
 src/app/api/transactions              optional Prisma index
 src/lib/intents   1Click client (official SDK)        src/lib/rhea     Smart Router + Lending reader
-src/lib/near      RPC, lending client, tx builders     src/lib/oracle   price sources + staleness
-src/lib/risk      TS mirror of the contract math       src/lib/lending  LendingClient: near | simulated
+src/lib/near      RPC, lending client, tx builders     src/lib/oracle   price sources, staleness, push
+src/lib/risk      TS mirror of the contract math       src/lib/lending  LendingClient for the testnet contract
 src/lib/wallets   near.tsx, evm.tsx, solana.tsx        src/config       assets, networks, risk params
 src/types/protocol.ts shared types                     prisma/          optional index schema
-contracts/{snapshot-registry,lending,test-token}
+contracts/{lending,test-token}
 ```
 
 ## 6. Environment
@@ -243,7 +245,7 @@ contracts/{snapshot-registry,lending,test-token}
 | Variable | Scope | Purpose |
 | --- | --- | --- |
 | `NEXT_PUBLIC_NEAR_NETWORK` | both | `testnet` (default) for lending |
-| `NEXT_PUBLIC_LENDING_CONTRACT_ID` | both | lending contract; unset = labelled simulation |
+| `NEXT_PUBLIC_LENDING_CONTRACT_ID` | both | overrides the committed testnet deployment |
 | `NEXT_PUBLIC_REOWN_PROJECT_ID` | client | enables WalletConnect via Reown; injected EVM wallets work without it |
 | `NEXT_PUBLIC_SOLANA_RPC_URL` | client | Solana RPC for SPL deposits, defaults to public mainnet RPC |
 | `NEXT_PUBLIC_TEST_TOKEN_SUFFIX` | both | account the test tokens live under, defaults to `radiri.testnet` |

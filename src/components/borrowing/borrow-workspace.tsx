@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { TokenPair } from "@/components/app/token-avatar";
 import { ActionForm } from "@/components/shared/action-form";
 import { AccountNotice, MarketNotice, usePortfolioTotals } from "@/components/shared/account-summary";
 import { HealthValue, LimitMeter, PageHeader, PriceTag, Section, SkeletonRows, StatTile } from "@/components/shared/bits";
@@ -310,11 +311,13 @@ export function BorrowWorkspace() {
         }}
         className="gap-3"
       >
-        <TabsList className="grid h-auto w-full grid-cols-1 gap-1 rounded-2xl p-1 group-data-horizontal/tabs:h-auto sm:inline-flex sm:w-fit">
-          <TabsTrigger value="stocks" className="h-8 rounded-xl px-3 text-[13px] sm:flex-none">
+        <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-[22px] bg-foreground/[0.04] p-1.5 group-data-horizontal/tabs:h-auto sm:grid-cols-2">
+          <TabsTrigger value="stocks" className="h-auto justify-start gap-3 rounded-[18px] px-3 py-2.5 text-left text-[14px] data-active:shadow-md">
+            <TokenPair from={{ symbol: "PEPE" }} to={{ symbol: "AAPL", category: "stock" }} size="md" />
             {DIRECTIONS.stocks.label}
           </TabsTrigger>
-          <TabsTrigger value="memes" className="h-8 rounded-xl px-3 text-[13px] sm:flex-none">
+          <TabsTrigger value="memes" className="h-auto justify-start gap-3 rounded-[18px] px-3 py-2.5 text-left text-[14px] data-active:shadow-md">
+            <TokenPair from={{ symbol: "NVDA", category: "stock" }} to={{ symbol: "PEPE" }} size="md" />
             {DIRECTIONS.memes.label}
           </TabsTrigger>
         </TabsList>

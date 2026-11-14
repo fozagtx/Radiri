@@ -1,145 +1,104 @@
 # Radiri
 
 Borrow tokenized stocks against your meme coins, borrow meme coins against tokenized stocks, and
-swap one for the other across chains. Settled on NEAR.
-Built at [NEAR HACKATHON](https://nearhackathon.com) (2026-11-01 to 2026-11-14).
+swap one for the other across chains. Built on NEAR at [NEAR HACKATHON](https://nearhackathon.com)
+(2026-11-01 to 2026-11-14).
 
-- **Borrow stocks with meme coins.** Deposit PEPE, keep your exposure, borrow tokenized Apple.
-- **Borrow meme coins with stocks.** Deposit tokenized NVIDIA, borrow PEPE.
-- **Swap meme coins for stocks across chains.** PEPE on Ethereum to tokenized Apple (AAPLon) on BNB
-  Chain in one NEAR Intents swap, and back.
+- **Borrow stocks with meme coins.** Lock PEPE, keep your exposure, borrow tokenized Apple.
+- **Borrow meme coins with stocks.** Lock tokenized NVIDIA, borrow PEPE.
+- **Swap across chains.** PEPE on Ethereum to tokenized Apple (AAPLon) on BNB Chain in one NEAR
+  Intents swap, and back.
 
-## Status
+## Live
 
-| Piece | State |
+| Piece | Where |
 | --- | --- |
-| Cross-chain meme coin <-> tokenized stock swaps | **Live on mainnet** through NEAR Intents 1Click: real quotes, deposit address, wallet send (EVM, Solana) or manual send, settlement tracked from 1Click |
-| Lending contract (`contracts/lending`) | Built and tested (52 unit tests, wasm 317 KB). Deploys to **testnet** with `scripts/deploy-lending.sh`; not deployed from this environment because deploying signs with your testnet keys |
-| Lending UI (Borrow, Portfolio, Overview, Activity) | Works against the contract when `NEXT_PUBLIC_LENDING_CONTRACT_ID` is set. Without it, a **labelled simulation** runs the same risk engine on live prices; nothing is signed and the banner says so on every page |
-| Prices | Live from 1Click: meme coins by symbol, stocks by their Ondo token (AAPLon, TSLAon, NVDAon) |
-| Markets | Radiri markets, the live 1Click meme/stock catalog, and RHEA Lending's live mainnet reserves as a reference |
-| Route monitor (pre-pivot feature) | Stablecoin route comparison, kept at `/routes` |
+| Lending contract | [`lending.radiri-markets.testnet`](https://testnet.nearblocks.io/address/lending.radiri-markets.testnet) on **NEAR testnet** |
+| Test tokens (no value) | `tpepe`, `twif`, `tshib`, `tbrett`, `taapl`, `ttsla`, `tnvda` `.radiri-markets.testnet` |
+| Price oracle | `oracle.radiri-markets.testnet`, pushing live 1Click prices (PEPE, WIF, SHIB, BRETT, AAPLon, TSLAon, NVDAon) |
+| Swaps | NEAR Intents 1Click on **mainnet** (NEAR Intents has no testnet) |
 
-Tokenized stocks are Ondo Global Markets tokens listed by 1Click. Their availability depends on
-your region and on NEAR Intents. Lending uses testnet test tokens that have **no value**; their
-oracle prices mirror the real assets so positions behave like the real market.
+Journeys A and B were run as real testnet transactions from a fresh account
+(`pnpm journeys:testnet`): 2B tPEPE deposited, 1 tAAPL borrowed
+([tx](https://testnet.nearblocks.io/txns/5VDjp8nVJUdqFqNLwRkruaJzFy5sVTZYm9aCQDZQ352s)); 25 tNVDA
+deposited, 10M tPEPE borrowed ([tx](https://testnet.nearblocks.io/txns/Fb1eFo4pqsHCd38soyBm7qUkjK8VVfFuR2GSpsXEng82));
+health factor 15.1, interest accruing.
 
-## Three journeys
+Journey C quotes live: 1B PEPE (Ethereum) → ~11.9 AAPLon (BNB Chain), ~63 s; 1 NVDAon → ~80M PEPE.
 
-**A. Meme coin collateral, borrow a stock** (`/borrow`, tab "Borrow stocks with meme coins")
-Connect NEAR wallet -> deposit tPEPE (`ft_transfer_call` with `{"action":"deposit_collateral"}`) ->
-borrowing power = collateral value x 25% LTV -> pick tAAPL -> review health factor, LTV,
-liquidation price, oracle freshness -> `borrow` -> position on Portfolio.
+## The app
 
-**B. Stock collateral, borrow a meme coin** (`/borrow`, tab "Borrow meme coins with stocks")
-Same flow with tAAPL / tTSLA / tNVDA as collateral (50% LTV) and a meme coin as the loan.
-
-**C. Meme coin to stock, cross-chain** (`/swap`)
-Pick PEPE on Ethereum and AAPLon on BNB Chain -> live dry quote (estimated output, minimum output,
-fees, ETA) -> recipient and refund addresses -> executable quote with a deposit address and
-deadline -> send from your EVM or Solana wallet (or any wallet manually) -> 1Click status until
-`SUCCESS`, `REFUNDED` or `FAILED`.
-
-Checked on 2026-11-14: 1B PEPE (eth) quoted 12.27 AAPLon (bsc) with a 63 s ETA; 1 NVDAon quoted
-80.25M PEPE; PEPE to `nZHIPU` returned the verbatim `No liquidity available`. Live numbers move.
+- **Overview:** net position, collateral, debt, borrowing power, a health-factor gauge, positions
+  and activity.
+- **Borrow:** two markets side by side. Pick collateral, mint test tokens from the testnet faucet,
+  deposit, see borrowing capacity, pick what to borrow, review health factor, LTV, liquidation price
+  and oracle freshness, sign with your NEAR wallet.
+- **Swap:** pay / receive card with real coin, stock and chain logos, live quotes refreshed every
+  20 s, recipient and refund addresses, a deposit address with countdown, one-click send from an EVM
+  or Solana wallet, settlement tracked from NEAR Intents.
+- **Portfolio, Markets, Activity:** positions with accrued interest and liquidation prices, every
+  lending market with live price and utilization, the swap catalog, and a unified history.
+- A live price ticker runs across the top; logos come from web3icons (coins, chains, MIT) and
+  simple-icons (company brands, CC0).
 
 ## How NEAR fits in
 
 | NEAR piece | Use |
 | --- | --- |
-| NEAR smart contract (Rust, near-sdk 5.30) | `contracts/lending`: collateral custody, debt, interest, oracle, liquidation; on-chain state is the source of truth |
-| NEAR Intents 1Click (official TypeScript SDK) | Token catalog with tokenized stocks, quotes, deposit addresses, deposit submission, execution status |
-| NEAR Connect (`@hot-labs/near-connect`) | NEAR wallet for lending transactions |
-| RHEA | Smart Router quotes on the route monitor; RHEA Lending reserves read live as the reference market |
+| Rust contract (near-sdk 5.30) | `contracts/lending`: collateral, debt, interest, oracle, liquidation; on-chain state is the source of truth |
+| NEAR Intents 1Click (official TS SDK) | Token catalog incl. Ondo tokenized stocks, quotes, deposit addresses, execution status |
+| NEAR Connect | NEAR wallet that signs every lending action |
+| RHEA | RHEA Lending read live as the reference market (it lists no meme coins or stocks) |
 | FastNEAR RPC | Contract views |
 
-### Why a custom lending contract instead of RHEA Lending
-
-RHEA Lending (`contract.main.burrow.near`) was checked live: its 26 reserves are stables, NEAR and
-liquid staking tokens, BTC/ETH variants, ZEC, QTC and RHEA tokens. None is a meme coin or a
-tokenized stock, so it cannot hold PEPE as collateral or lend AAPL. Radiri ships its own contract
-for these markets and shows RHEA's reserves on the Markets page for reference.
-
-### Why a reporter-pushed oracle
-
-No on-chain NEAR oracle prices both meme coins and stocks today: Pyth on NEAR has no equity feeds
-(and its BTC price was ~80 days old), the OutLayer Price Oracle holds ~18 crypto assets with no
-stocks. The contract therefore accepts prices from an authorised reporter, timestamps them, rejects
-any single move above the asset's limit, and refuses to borrow or liquidate on a stale price.
-`pnpm oracle:push` reports live 1Click prices with a key that can only call `report_prices`.
+**Why its own lending contract:** RHEA Lending's 26 mainnet reserves include no meme coin and no
+tokenized stock. **Why a pushed oracle:** Pyth on NEAR has no equity feeds and the OutLayer oracle
+has no stocks, so a reporter whose key can only call `report_prices` pushes 1Click prices, and the
+contract rejects stale prices and outsized moves. The app refreshes stale prices itself through
+`POST /api/oracle/refresh`.
 
 ## Risk model
-
-Per-asset LTV, liquidation threshold, liquidation bonus, reserve factor, collateral and borrow
-caps, kinked interest model, max price age and max price move. Health factor =
-Σ(collateral x liquidation threshold) / debt; below 1.00 a position can be liquidated (50% close
-factor, bonus paid in collateral). The full formulas are in
-[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md). The TypeScript copy in `src/lib/risk` is checked
-against the Rust contract with shared vectors (`pnpm gen:lending`).
 
 | Category | LTV | Liquidation at | Bonus | Max price age |
 | --- | --- | --- | --- | --- |
 | Meme coins | 25% | 40% | 15% | 300 s |
 | Tokenized stocks | 50% | 65% | 8% | 900 s |
 
-These are conservative testnet starting points, not production values.
+Health factor = Σ(collateral × liquidation threshold) / debt; below 1.00 a position can be
+liquidated (50% close factor, bonus paid in collateral). Formulas in
+[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md). The TypeScript copy in `src/lib/risk` is checked
+against the contract with shared vectors (`pnpm gen:lending`). Testnet starting points, not
+production values.
 
 ## Run it
 
-Requires Node 20+ and pnpm.
-
 ```sh
 pnpm install
-pnpm dev            # http://localhost:3000 -> Open the app
+pnpm dev                 # http://localhost:3000 -> Open the app
 ```
 
-No key is needed: swaps quote live, and lending runs the labelled simulation until a contract is
-configured.
-
-## Deploy the lending contract (testnet)
+It talks to the deployed testnet contract out of the box. To keep prices fresh, put the reporter
+key in `.env.local` / Vercel (`RADIRI_ORACLE_ACCOUNT`, `RADIRI_ORACLE_PRIVATE_KEY`); without it
+borrowing pauses whenever prices go stale, exactly as the contract enforces.
 
 ```sh
-OWNER=<you>.testnet scripts/deploy-lending.sh   # tokens, lending contract, assets, liquidity, oracle key
-pnpm oracle:push                                # report live prices (repeat every minute)
+pnpm deploy:testnet my-name.testnet   # your own copy: faucet account, tokens, lending, oracle key
+pnpm oracle:push                      # push live prices now
+pnpm journeys:testnet                 # replay journeys A and B as real testnet transactions
 ```
 
-Details in [`contracts/lending/README.md`](./contracts/lending/README.md).
-
-## Architecture
-
-One Next.js 16 app (App Router, route handlers, server-only modules for every secret); no separate
-backend.
+## Layout
 
 ```text
-src/app/(app)/   overview, borrow, swap, portfolio, markets, activity, routes
+src/app/(app)/   overview, borrow, swap, portfolio, markets, activity
 src/app/api/     assets, pricing, swaps/{quote,status,submit}, lending/{markets,account},
-                 rhea/lending, transactions, plus the route-monitor endpoints
-src/lib/         intents (1Click SDK), lending (near + simulated clients), risk (contract math mirror),
-                 oracle (1Click prices, staleness), rhea, near (RPC, transactions), wallets (NEAR, EVM, Solana)
-src/config/      assets.ts (classification + eligibility), lending-assets.ts (risk parameters)
-contracts/       lending, test-token, snapshot-registry (cargo workspace)
-prisma/          optional PostgreSQL index for swap history
-scripts/         deploy-lending.sh, oracle-push.ts, gen-lending-artifacts.ts, monitor.ts
+                 oracle/refresh, rhea/lending, transactions
+src/lib/         intents (1Click), lending (contract client), risk (contract math mirror),
+                 oracle (prices, push), rhea, near, wallets (NEAR, EVM, Solana)
+src/config/      deployment.ts (testnet ids), lending-assets.ts (risk parameters), assets.ts
+contracts/       lending, test-token (cargo workspace)
+scripts/         testnet-deploy.ts, testnet-journeys.ts, oracle-push.ts, gen-lending-artifacts.ts
 ```
-
-Every asset carries an explicit, independent classification: **swap** eligible (live in 1Click),
-**collateral** eligible and **borrow** eligible (registered on the lending contract). One never
-implies another. The database is optional and only indexes swaps; balances and debt are always read
-from the contract.
-
-## Environment
-
-See [`.env.example`](./.env.example). Everything is optional for local use.
-
-| Variable | Purpose |
-| --- | --- |
-| `NEXT_PUBLIC_LENDING_CONTRACT_ID` | Lending contract; unset = labelled simulation |
-| `NEXT_PUBLIC_TEST_TOKEN_SUFFIX` | Account the test tokens live under |
-| `RADIRI_ORACLE_ACCOUNT` / `RADIRI_ORACLE_PRIVATE_KEY` | Oracle reporter, function-call key limited to `report_prices` |
-| `NEXT_PUBLIC_REOWN_PROJECT_ID` | Enables WalletConnect; injected EVM wallets work without it |
-| `NEXT_PUBLIC_SOLANA_RPC_URL` | Solana RPC for SPL deposits |
-| `ONECLICK_JWT` | 1Click partner key, removes the 0.2% unauthenticated fee |
-| `DATABASE_URL` | Optional swap-history index |
 
 ## Verification
 
@@ -148,22 +107,12 @@ pnpm exec tsc --noEmit && pnpm lint && pnpm test && pnpm build
 cd contracts && cargo test --workspace --lib
 ```
 
-On the committed tree: 102 TypeScript tests, 78 contract tests (52 lending, 9 test token,
-17 snapshot registry), typecheck, lint and production build all pass.
-
 ## Hackathon disclosure
 
-Radiri existed before the pivot as a stablecoin route monitor with a snapshot registry contract
-(commits up to `6424ae9`). The lending contract, test token, swap execution flow, tokenized stock
-catalog, risk engine, oracle reporter and the Overview / Borrow / Swap / Portfolio / Markets /
-Activity app were built during the hackathon on branch `ccr-80a3be39-dxl70y`.
-
-## Built with
-
-near-sdk 5.30, near-contract-standards, cargo-near, Next.js 16, React 19, Tailwind CSS 4,
-shadcn/ui on `@base-ui/react`, `@defuse-protocol/one-click-sdk-typescript`, `@hot-labs/near-connect`,
-wagmi + viem, `@solana/wallet-adapter-react`, Prisma 7, zod, vitest. Parts of the code were written
-with AI assistance and reviewed.
+Radiri existed before the hackathon as a stablecoin route monitor (commits up to `6424ae9`). This
+branch replaces it: the lending contract, test tokens, testnet deployment, swap flow, tokenized
+stock catalog, risk engine, oracle and the whole app were built during the hackathon, and the
+stablecoin features were removed.
 
 ## License
 
