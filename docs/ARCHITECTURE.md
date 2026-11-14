@@ -16,7 +16,8 @@ Radiri started as a cross-chain **stablecoin** route monitor: dry-run quotes fro
 | `src/lib/radiri/adapters/oneclick.ts` 1Click `/v0/quote` (dry) | stable pairs only | **MODIFY**: generalise to any 1Click asset, add live (non-dry) quotes, status, deposit submit |
 | `src/lib/radiri/catalog.ts` 1Click `/v0/tokens` cache | filtered to stablecoins | **MODIFY**: classify every token (meme / stock / stable / major / rwa / other) |
 | `src/lib/radiri/adapters/rhea.ts` RHEA Smart Router | NEAR-chain quotes | **KEEP** as a NEAR-side route source |
-| Route compare engine, matrix, opportunities, AI analyst, MCP endpoint | stable monitor | **KEEP**, moved to `/routes`, MCP gains swap tools |
+| Route compare engine, matrix, opportunities, AI analyst | stable monitor | **KEEP**, moved to `/routes` |
+| MCP connection page | agent access | **REPLACE**: page and nav link removed; the `/api/mcp` endpoint stays, unlinked |
 | `contract/` snapshot registry (near-sdk 5.30.1, deployed `radiri.testnet`) | on-chain quote history | **KEEP**, moved to `contracts/snapshot-registry` |
 | `scripts/monitor.ts` | writes snapshots | **KEEP** |
 | `@near-wallet-selector` + MyNearWallet | read-only sign-in | **REPLACE** with NEAR Connect (`@hot-labs/near-connect`) |
@@ -32,21 +33,24 @@ Checked live on 2026-11-13 from this repository's environment.
 1. **1Click supports meme coins cross-chain.** `/v0/tokens` lists PEPE, SHIB, TURBO, SPX, MOG (eth),
    $WIF, BOME, TRUMP, PENGU, MELANIA (sol), BRETT (base), DOGE, BLACKDRAGON, SHITZU (near) and more.
    A dry quote `$WIF (sol) -> PEPE (eth)` returned a route with a 29 s ETA.
-2. **1Click lists no liquid tokenized stocks.** The only equity-like rows are `tMU` (NEAR,
-   on-chain name "MU Test Stock", price 0) and `nZHIPU` (`nzhipu.rwa.assetize.near`, price 0).
-   `PEPE (eth) -> nZHIPU (near)` returns `No liquidity available`. Tokenized gold (`XAUT`, eth) does
-   quote. A NEAR x Ondo announcement (2026-10-31) exists but no Ondo stock token is in `/v0/tokens`.
-   Consequence: stock destinations are classified and offered, and the engine reports the verbatim
-   1Click reason when no route exists. Nothing is faked.
+2. **1Click lists real tokenized stocks, but only with `ondoTokens=true`.** `/v0/tokens?ondoTokens=true`
+   adds Ondo Global Markets stocks on BNB Chain with live prices: AAPLon, TSLAon, NVDAon, MSFTon,
+   AMZNon, GOOGLon, METAon, SPYon, QQQon and more. Live dry quotes work both ways:
+   1B `PEPE (eth) -> 12.27 AAPLon (bsc)` in ~63 s, `$WIF (sol) -> TSLAon (bsc)`,
+   `NVDAon (bsc) -> PEPE (eth)`. NEAR-native `tMU` ("MU Test Stock") and `nZHIPU` have no price, and
+   `PEPE -> nZHIPU` returns the verbatim `No liquidity available`. Without the flag no stock appears.
 3. **RHEA Lending (`contract.main.burrow.near`, mainnet) cannot serve this product.** Its 26 assets
    are stables, NEAR/LSTs, BTC/ETH variants, ZEC, QTC and RHEA tokens; none is a meme coin or a
    tokenized stock. It prices through Pyth (`aggregate-oracle.near`, 60 s validity, 90 s staleness).
    Consequence: Radiri ships its own lending contract and shows RHEA Lending's live reserves on the
    Markets page, read-only, as the reference market.
-4. **Pyth on NEAR has no live equity feed.** `pyth-oracle.near` reports `price_feed_exists = false`
-   for the AAPL/TSLA/NVDA ids tried, and its BTC price was ~80 days old (pull oracle, nobody pushes).
-   Consequence: the lending contract uses a reporter-pushed oracle with staleness and deviation
-   guards. Off-chain sources: 1Click `/v0/tokens` prices (meme coins) and Pyth Hermes (equities).
+4. **No on-chain NEAR oracle prices meme coins and stocks.** `pyth-oracle.near` reports
+   `price_feed_exists = false` for the AAPL/TSLA/NVDA ids tried and its BTC price was ~80 days old
+   (pull oracle). The OutLayer Price Oracle (`price-oracle.near`, listed in the NEAR docs) holds
+   about 18 crypto assets, DOGE the only meme coin, no stocks, last updated ~6.5 days earlier.
+   Pyth Hermes now requires an API key. Consequence: the lending contract uses a reporter-pushed
+   oracle with staleness and deviation guards, and the reporter takes every price from 1Click
+   `/v0/tokens` (meme coins by symbol, stocks by their Ondo token, each with `priceUpdatedAt`).
 5. **NEAR Intents has no testnet.** Swaps run on mainnet with the user's own wallet. The lending
    contract deploys to testnet with clearly labelled test tokens.
 
@@ -208,17 +212,18 @@ Events: NEP-297, `standard: "radiri-lending"`, `version: "1.0.0"`, one event per
 
 ### Test tokens (`contracts/test-token`)
 
-A NEP-141 token with `mint(account_id, amount)` capped per call, used only on testnet. Names carry
-"Radiri Test … (no value)". Planned set: `tPEPE`, `tWIF`, `tSHIB`, `tBRETT` (meme) and `tAAPL`,
-`tTSLA`, `tNVDA` (stock). Each test token's oracle price mirrors a named real reference
-(1Click price for memes, Pyth Hermes for equities). The UI always shows the "test token" label.
+A NEP-141 token with `mint(account_id, amount)` capped at 10 billion whole tokens per call, used
+only on testnet. Names carry "Radiri Test … (no value)". The set: `tPEPE`, `tWIF`, `tSHIB`, `tBRETT`
+(meme) and `tAAPL`, `tTSLA`, `tNVDA` (stock). Each test token's oracle price mirrors a named real
+reference from 1Click (PEPE, $WIF, SHIB, BRETT; AAPLon, TSLAon, NVDAon). The UI always shows the
+"test token" label.
 
 ## 5. Next.js layout and ownership
 
 ```
 src/app/(site)/page.tsx               landing (brand kept)
 src/app/(app)/layout.tsx              app shell: sidebar + mobile nav
-src/app/(app)/{overview,borrow,swap,portfolio,markets,activity,routes,mcp}/page.tsx
+src/app/(app)/{overview,borrow,swap,portfolio,markets,activity,routes}/page.tsx
 src/app/api/assets                    classified 1Click catalog + lending eligibility
 src/app/api/swaps/{quote,status,submit}
 src/app/api/pricing                   price observations with source + age
@@ -241,7 +246,7 @@ contracts/{snapshot-registry,lending,test-token}
 | `NEXT_PUBLIC_LENDING_CONTRACT_ID` | both | lending contract; unset = labelled simulation |
 | `NEXT_PUBLIC_REOWN_PROJECT_ID` | client | enables WalletConnect via Reown; injected EVM wallets work without it |
 | `NEXT_PUBLIC_SOLANA_RPC_URL` | client | Solana RPC for SPL deposits, defaults to public mainnet RPC |
-| `ONECLICK_JWT` | server | 1Click partner JWT (optional, lowers fees) |
-| `PYTH_HERMES_URL` | server | defaults to `https://hermes.pyth.network` |
+| `NEXT_PUBLIC_TEST_TOKEN_SUFFIX` | both | account the test tokens live under, defaults to `radiri.testnet` |
+| `ONECLICK_JWT` | server | 1Click partner JWT (optional, removes the 0.2% unauthenticated fee) |
 | `RADIRI_ORACLE_ACCOUNT` / `RADIRI_ORACLE_PRIVATE_KEY` | script | function-call key limited to `report_prices` |
 | `DATABASE_URL` | server | optional PostgreSQL index |

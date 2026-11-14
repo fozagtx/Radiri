@@ -310,11 +310,11 @@ export function BorrowWorkspace() {
         }}
         className="gap-3"
       >
-        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 rounded-2xl p-1 sm:w-fit">
-          <TabsTrigger value="stocks" className="h-8 flex-none rounded-xl px-3 text-[13px]">
+        <TabsList className="grid h-auto w-full grid-cols-1 gap-1 rounded-2xl p-1 group-data-horizontal/tabs:h-auto sm:inline-flex sm:w-fit">
+          <TabsTrigger value="stocks" className="h-8 rounded-xl px-3 text-[13px] sm:flex-none">
             {DIRECTIONS.stocks.label}
           </TabsTrigger>
-          <TabsTrigger value="memes" className="h-8 flex-none rounded-xl px-3 text-[13px]">
+          <TabsTrigger value="memes" className="h-8 rounded-xl px-3 text-[13px] sm:flex-none">
             {DIRECTIONS.memes.label}
           </TabsTrigger>
         </TabsList>

@@ -61,7 +61,7 @@ pub struct LiquidationQuote {
 pub fn liquidation_quote(i: &LiquidationInput) -> LiquidationQuote {
     let max_repay = bps_floor(i.debt_amount, i.close_factor_bps as u128);
     let mut repay = i.transferred_amount.min(max_repay);
-    let seize_value_wad = bps_floor(
+    let mut seize_value_wad = bps_floor(
         value_wad(repay, i.debt_price_wad, i.debt_decimals),
         BPS + i.liquidation_bonus_bps as u128,
     );
@@ -70,6 +70,8 @@ pub fn liquidation_quote(i: &LiquidationInput) -> LiquidationQuote {
     if seize_amount > i.borrower_collateral {
         repay = mul_div_ceil(repay, i.borrower_collateral, seize_amount);
         seize_amount = i.borrower_collateral;
+        // Report what is actually seized (all of the borrower's collateral), as the TS mirror does.
+        seize_value_wad = value_wad(seize_amount, i.collateral_price_wad, i.collateral_decimals);
         capped = true;
     }
     LiquidationQuote {

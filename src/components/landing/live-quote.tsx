@@ -18,8 +18,8 @@ const PAIRS = [
     key: "wif-tsla",
     from: { label: "$WIF · Solana", id: "nep141:sol-b9c68f94ec8fd160137af8cdfe5e61cd68e2afba.omft.near" },
     to: { label: "TSLAon · BNB Chain", id: "nep141:bnb-0x2494b603319d4d9f9715c9f4496d9e0364b59d93.omdep.near" },
-    amount: "500",
-    amountLabel: "500 $WIF",
+    amount: "200",
+    amountLabel: "200 $WIF",
     dot: "lp-dot--rhea",
   },
 ];

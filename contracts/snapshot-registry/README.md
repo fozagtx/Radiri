@@ -89,7 +89,7 @@ EVENT_JSON:{"standard":"radiri","version":"1.0.0","event":"snapshot","data":[Sna
 
 ```sh
 cargo test --lib                          # unit tests, no sandbox needed
-cargo near build non-reproducible-wasm    # -> target/near/radiri_contract.wasm (163.9 KB)
+cargo near build non-reproducible-wasm    # -> ../target/near/radiri_contract/radiri_contract.wasm (163.9 KB)
 cargo test --test sandbox                 # integration test on a local sandbox
 ```
 

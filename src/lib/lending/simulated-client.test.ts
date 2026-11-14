@@ -191,3 +191,27 @@ describe("activity feed", () => {
     expect(swapActivityItems([])).toEqual([]);
   });
 });
+
+describe("simulation change events", () => {
+  it("reads never announce a change (readers re-read on the event), writes do", async () => {
+    const { SIM_CHANGED_EVENT } = await import("./sim-store");
+    const target = new EventTarget();
+    let events = 0;
+    target.addEventListener(SIM_CHANGED_EVENT, () => (events += 1));
+    const globals = globalThis as { window?: unknown };
+    const previous = globals.window;
+    globals.window = target;
+    try {
+      const { client } = setup();
+      await client.getConfig();
+      await client.getAssets();
+      await client.getAccount(ALICE);
+      await client.getActivity(ALICE);
+      expect(events).toBe(0);
+      await client.faucet(ALICE, PEPE, units("1", 18));
+      expect(events).toBe(1);
+    } finally {
+      globals.window = previous;
+    }
+  });
+});

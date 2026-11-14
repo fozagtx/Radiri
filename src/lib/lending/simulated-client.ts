@@ -168,7 +168,8 @@ export class SimulatedLendingClient implements LendingClientExt {
     const nowMs = this.now();
     const state = this.load(nowMs);
     this.accrue(state, nowMs);
-    saveSimState(state);
+    // Persist the accrual quietly: this runs on every read, and readers re-read on SIM_CHANGED_EVENT.
+    saveSimState(state, { notify: false });
     return { state, nowMs };
   }
 

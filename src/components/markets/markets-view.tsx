@@ -42,6 +42,13 @@ function usd(value: number | null): string {
   return `$${value.toPrecision(3)}`;
 }
 
+/** Exact decimal string from RHEA -> grouped, two decimals (display only). */
+function amount(value: string | null): string {
+  if (value === null) return "–";
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toLocaleString("en-US", { maximumFractionDigits: 2 }) : value;
+}
+
 function Flag({ on, label }: { on: boolean; label: string }) {
   return <Pill tone={on ? "good" : "neutral"}>{on ? label : `no ${label}`}</Pill>;
 }
@@ -180,8 +187,8 @@ function RheaReference() {
                   <Flag on={reserve.canBorrow} label="borrow" />
                 </div>
               </TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{reserve.suppliedUsd === null ? (reserve.supplied ?? "–") : usd(reserve.suppliedUsd)}</TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{reserve.borrowedUsd === null ? (reserve.borrowed ?? "–") : usd(reserve.borrowedUsd)}</TableCell>
+              <TableCell className="text-right font-mono tabular-nums">{reserve.suppliedUsd === null ? `${amount(reserve.supplied)} ${reserve.symbol}` : usd(reserve.suppliedUsd)}</TableCell>
+              <TableCell className="text-right font-mono tabular-nums">{reserve.borrowedUsd === null ? `${amount(reserve.borrowed)} ${reserve.symbol}` : usd(reserve.borrowedUsd)}</TableCell>
               <TableCell className="text-right font-mono tabular-nums">{(reserve.utilization * 100).toFixed(2)}%</TableCell>
               <TableCell className="text-right font-mono tabular-nums">{(reserve.borrowApyDerived * 100).toFixed(2)}%</TableCell>
             </TableRow>

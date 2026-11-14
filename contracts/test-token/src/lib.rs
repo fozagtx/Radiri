@@ -1,7 +1,7 @@
 //! Radiri test token: a TESTNET-ONLY NEP-141 fungible token with no value.
 //!
 //! Used by the Radiri lending contract on testnet (tPEPE, tWIF, tSHIB, tBRETT, tAAPL, tTSLA,
-//! tNVDA). Anyone can `mint` up to 1,000,000 whole tokens per call. The metadata name must carry
+//! tNVDA). Anyone can `mint` up to 10,000,000,000 whole tokens per call. The metadata name must carry
 //! "(no value)" and `new` refuses to initialise on an account outside testnet (or the local
 //! sandbox), so the token cannot be mistaken for a real asset.
 //!
@@ -17,7 +17,8 @@ use near_sdk::json_types::U128;
 use near_sdk::{env, log, near, require, AccountId, BorshStorageKey, NearToken, PanicOnDefault, Promise, PromiseOrValue};
 
 /// Largest mint per call, in whole tokens.
-pub const MAX_MINT_WHOLE_TOKENS: u128 = 1_000_000;
+/// Meme coins need billions of units to be meaningful collateral (2B PEPE is a few thousand USD).
+pub const MAX_MINT_WHOLE_TOKENS: u128 = 10_000_000_000;
 /// Every test token's name must contain this label.
 pub const NO_VALUE_LABEL: &str = "(no value)";
 /// Account suffixes the token may be initialised on: testnet, or the near-workspaces sandbox.
@@ -75,7 +76,7 @@ impl Contract {
         Self { owner_id, token, metadata }
     }
 
-    /// Public faucet: mint `amount` base units (at most 1,000,000 whole tokens) to `account_id`.
+    /// Public faucet: mint `amount` base units (at most 10,000,000,000 whole tokens) to `account_id`.
     ///
     /// If `account_id` is not registered, attach at least `storage_balance_bounds().min`
     /// (0.00125 NEAR) and it is registered first; any excess deposit is refunded to the caller.
@@ -87,7 +88,7 @@ impl Contract {
         let cap = MAX_MINT_WHOLE_TOKENS
             .checked_mul(10u128.pow(self.metadata.decimals as u32))
             .unwrap_or(u128::MAX);
-        require!(amount <= cap, "At most 1,000,000 whole tokens per mint call");
+        require!(amount <= cap, "At most 10,000,000,000 whole tokens per mint call");
 
         let attached = env::attached_deposit();
         let mut refund = attached;
@@ -243,7 +244,7 @@ mod tests {
         assert_eq!(c.ft_total_supply().0, 0);
         assert_eq!(c.get_owner(), accounts(0));
         assert!(c.storage_balance_of(accounts(0)).is_some());
-        assert_eq!(c.max_mint().0, 1_000_000 * 10u128.pow(18));
+        assert_eq!(c.max_mint().0, 10_000_000_000 * 10u128.pow(18));
     }
 
     #[test]
@@ -290,18 +291,18 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "At most 1,000,000 whole tokens per mint call")]
+    #[should_panic(expected = "At most 10,000,000,000 whole tokens per mint call")]
     fn mint_is_capped_per_call() {
         let mut c = setup(8);
         ctx(accounts(0), NearToken::from_yoctonear(0));
-        c.mint(accounts(0), U128(1_000_000 * 10u128.pow(8) + 1));
+        c.mint(accounts(0), U128(10_000_000_000 * 10u128.pow(8) + 1));
     }
 
     #[test]
     fn mint_at_cap_is_allowed() {
         let mut c = setup(8);
         ctx(accounts(0), NearToken::from_yoctonear(0));
-        assert_eq!(c.mint(accounts(0), U128(1_000_000 * 10u128.pow(8))).0, 100_000_000_000_000);
+        assert_eq!(c.mint(accounts(0), U128(10_000_000_000 * 10u128.pow(8))).0, 1_000_000_000_000_000_000);
     }
 
     #[test]

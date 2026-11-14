@@ -74,7 +74,12 @@ export function loadSimState(): SimState | null {
   return memoryState;
 }
 
-export function saveSimState(state: SimState): void {
+/**
+ * Persists the simulation. `notify` announces a user-visible change (SIM_CHANGED_EVENT) and must be
+ * false on read paths: readers react to the event by reading again, so a read that notified would
+ * re-trigger itself forever.
+ */
+export function saveSimState(state: SimState, { notify = true }: { notify?: boolean } = {}): void {
   memoryState = state;
   const store = storage();
   if (store) {
@@ -84,6 +89,7 @@ export function saveSimState(state: SimState): void {
       // quota or blocked storage: keep the in-memory copy for this session
     }
   }
+  if (!notify) return;
   try {
     if (typeof window !== "undefined") window.dispatchEvent(new Event(SIM_CHANGED_EVENT));
   } catch {

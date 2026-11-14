@@ -1,0 +1,371 @@
+[
+  {
+    "fn": "value_wad",
+    "input": {
+      "amount": "1000000000000000000000000000",
+      "price_wad": "4400000000000",
+      "decimals": 18
+    },
+    "expected": {
+      "value_wad": "4400000000000000000000",
+      "debt_value_wad": "4400000000000000000000"
+    }
+  },
+  {
+    "fn": "value_wad",
+    "input": {
+      "amount": "2500000000",
+      "price_wad": "355520000000000000000",
+      "decimals": 8
+    },
+    "expected": {
+      "value_wad": "8888000000000000000000",
+      "debt_value_wad": "8888000000000000000000"
+    }
+  },
+  {
+    "fn": "value_wad",
+    "input": {
+      "amount": "5000000000",
+      "price_wad": "148000000000000000",
+      "decimals": 6
+    },
+    "expected": {
+      "value_wad": "740000000000000000000",
+      "debt_value_wad": "740000000000000000000"
+    }
+  },
+  {
+    "fn": "value_wad",
+    "input": {
+      "amount": "1",
+      "price_wad": "4400000000000",
+      "decimals": 18
+    },
+    "expected": {
+      "value_wad": "0",
+      "debt_value_wad": "1"
+    }
+  },
+  {
+    "fn": "value_wad",
+    "input": {
+      "amount": "0",
+      "price_wad": "4400000000000",
+      "decimals": 18
+    },
+    "expected": {
+      "value_wad": "0",
+      "debt_value_wad": "0"
+    }
+  },
+  {
+    "fn": "health_factor_wad",
+    "input": {
+      "liquidation_threshold_wad": "3520000000000000000000",
+      "debt_value_wad": "355520000000000000000"
+    },
+    "expected": {
+      "health_factor_wad": "9900990099009900990"
+    }
+  },
+  {
+    "fn": "health_factor_wad",
+    "input": {
+      "liquidation_threshold_wad": "1000000000000000000",
+      "debt_value_wad": "1000000000000000000"
+    },
+    "expected": {
+      "health_factor_wad": "1000000000000000000"
+    }
+  },
+  {
+    "fn": "health_factor_wad",
+    "input": {
+      "liquidation_threshold_wad": "999000000000000000",
+      "debt_value_wad": "1000000000000000000"
+    },
+    "expected": {
+      "health_factor_wad": "999000000000000000"
+    }
+  },
+  {
+    "fn": "health_factor_wad",
+    "input": {
+      "liquidation_threshold_wad": "1000000000000000000",
+      "debt_value_wad": "0"
+    },
+    "expected": {
+      "health_factor_wad": null
+    }
+  },
+  {
+    "fn": "utilization_bps",
+    "input": {
+      "cash": "0",
+      "borrowed": "0"
+    },
+    "expected": {
+      "utilization_bps": 0
+    }
+  },
+  {
+    "fn": "utilization_bps",
+    "input": {
+      "cash": "99900000000",
+      "borrowed": "100000000"
+    },
+    "expected": {
+      "utilization_bps": 10
+    }
+  },
+  {
+    "fn": "utilization_bps",
+    "input": {
+      "cash": "1",
+      "borrowed": "3"
+    },
+    "expected": {
+      "utilization_bps": 7500
+    }
+  },
+  {
+    "fn": "utilization_bps",
+    "input": {
+      "cash": "0",
+      "borrowed": "5"
+    },
+    "expected": {
+      "utilization_bps": 10000
+    }
+  },
+  {
+    "fn": "interest_rates",
+    "input": {
+      "model": {
+        "base_bps": 200,
+        "slope1_bps": 1200,
+        "slope2_bps": 30000,
+        "optimal_utilization_bps": 6000
+      },
+      "utilization_bps": 0,
+      "reserve_factor_bps": 2000
+    },
+    "expected": {
+      "borrow_apr_bps": 200,
+      "supply_apr_bps": 0
+    }
+  },
+  {
+    "fn": "interest_rates",
+    "input": {
+      "model": {
+        "base_bps": 200,
+        "slope1_bps": 1200,
+        "slope2_bps": 30000,
+        "optimal_utilization_bps": 6000
+      },
+      "utilization_bps": 3000,
+      "reserve_factor_bps": 2000
+    },
+    "expected": {
+      "borrow_apr_bps": 800,
+      "supply_apr_bps": 192
+    }
+  },
+  {
+    "fn": "interest_rates",
+    "input": {
+      "model": {
+        "base_bps": 200,
+        "slope1_bps": 1200,
+        "slope2_bps": 30000,
+        "optimal_utilization_bps": 6000
+      },
+      "utilization_bps": 6000,
+      "reserve_factor_bps": 2000
+    },
+    "expected": {
+      "borrow_apr_bps": 1400,
+      "supply_apr_bps": 672
+    }
+  },
+  {
+    "fn": "interest_rates",
+    "input": {
+      "model": {
+        "base_bps": 200,
+        "slope1_bps": 1200,
+        "slope2_bps": 30000,
+        "optimal_utilization_bps": 6000
+      },
+      "utilization_bps": 8000,
+      "reserve_factor_bps": 2000
+    },
+    "expected": {
+      "borrow_apr_bps": 16400,
+      "supply_apr_bps": 10496
+    }
+  },
+  {
+    "fn": "interest_rates",
+    "input": {
+      "model": {
+        "base_bps": 200,
+        "slope1_bps": 1200,
+        "slope2_bps": 30000,
+        "optimal_utilization_bps": 6000
+      },
+      "utilization_bps": 10000,
+      "reserve_factor_bps": 2000
+    },
+    "expected": {
+      "borrow_apr_bps": 31400,
+      "supply_apr_bps": 25120
+    }
+  },
+  {
+    "fn": "interest_rates",
+    "input": {
+      "model": {
+        "base_bps": 100,
+        "slope1_bps": 800,
+        "slope2_bps": 20000,
+        "optimal_utilization_bps": 7000
+      },
+      "utilization_bps": 7000,
+      "reserve_factor_bps": 1500
+    },
+    "expected": {
+      "borrow_apr_bps": 900,
+      "supply_apr_bps": 535
+    }
+  },
+  {
+    "fn": "interest_rates",
+    "input": {
+      "model": {
+        "base_bps": 100,
+        "slope1_bps": 800,
+        "slope2_bps": 20000,
+        "optimal_utilization_bps": 7000
+      },
+      "utilization_bps": 9500,
+      "reserve_factor_bps": 1500
+    },
+    "expected": {
+      "borrow_apr_bps": 17566,
+      "supply_apr_bps": 14183
+    }
+  },
+  {
+    "fn": "accrue_index",
+    "input": {
+      "borrow_index": "1000000000000000000",
+      "apr_bps": 1200,
+      "dt_sec": "31536000"
+    },
+    "expected": {
+      "borrow_index": "1120000000000000000"
+    }
+  },
+  {
+    "fn": "accrue_index",
+    "input": {
+      "borrow_index": "1000000000000000000",
+      "apr_bps": 200,
+      "dt_sec": "3600"
+    },
+    "expected": {
+      "borrow_index": "1000002283105022831"
+    }
+  },
+  {
+    "fn": "accrue_index",
+    "input": {
+      "borrow_index": "1050000000000000000",
+      "apr_bps": 31400,
+      "dt_sec": "86400"
+    },
+    "expected": {
+      "borrow_index": "1059032876712328766"
+    }
+  },
+  {
+    "fn": "accrue_index",
+    "input": {
+      "borrow_index": "1000000000000000000",
+      "apr_bps": 0,
+      "dt_sec": "86400"
+    },
+    "expected": {
+      "borrow_index": "1000000000000000000"
+    }
+  },
+  {
+    "fn": "liquidation",
+    "input": {
+      "debt_amount": "100000000",
+      "transferred_amount": "40000000",
+      "debt_price_wad": "355520000000000000000",
+      "debt_decimals": 8,
+      "borrower_collateral": "2000000000000000000000000000",
+      "collateral_price_wad": "4400000000000",
+      "collateral_decimals": 18,
+      "liquidation_bonus_bps": 1500,
+      "close_factor_bps": 5000
+    },
+    "expected": {
+      "max_repay": "50000000",
+      "repay": "40000000",
+      "seize_value_wad": "163539200000000000000",
+      "seize_amount": "37168000000000000000000000",
+      "refund": "0",
+      "capped": false
+    }
+  },
+  {
+    "fn": "liquidation",
+    "input": {
+      "debt_amount": "100000000",
+      "transferred_amount": "100000000",
+      "debt_price_wad": "355520000000000000000",
+      "debt_decimals": 8,
+      "borrower_collateral": "2000000000000000000000000000",
+      "collateral_price_wad": "4400000000000",
+      "collateral_decimals": 18,
+      "liquidation_bonus_bps": 1500,
+      "close_factor_bps": 5000
+    },
+    "expected": {
+      "max_repay": "50000000",
+      "repay": "50000000",
+      "seize_value_wad": "204424000000000000000",
+      "seize_amount": "46460000000000000000000000",
+      "refund": "50000000",
+      "capped": false
+    }
+  },
+  {
+    "fn": "liquidation",
+    "input": {
+      "debt_amount": "100000000",
+      "transferred_amount": "50000000",
+      "debt_price_wad": "355520000000000000000",
+      "debt_decimals": 8,
+      "borrower_collateral": "10000000000000000000000000",
+      "collateral_price_wad": "4400000000000",
+      "collateral_decimals": 18,
+      "liquidation_bonus_bps": 1500,
+      "close_factor_bps": 5000
+    },
+    "expected": {
+      "max_repay": "50000000",
+      "repay": "10761946",
+      "seize_value_wad": "44000000000000000000",
+      "seize_amount": "10000000000000000000000000",
+      "refund": "39238054",
+      "capped": true
+    }
+  }
+]
