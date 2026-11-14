@@ -1,4 +1,4 @@
-import { createSystem, defaultConfig, defineConfig } from "@chakra-ui/react";
+import { createSystem, defaultConfig, defineConfig, defineRecipe } from "@chakra-ui/react";
 
 /**
  * Radiri theme for Chakra UI: cream background, ink foreground, white panels, Geist for text and
@@ -9,6 +9,19 @@ const config = defineConfig({
     "html, body": { bg: "bg", color: "fg", fontFamily: "body" },
   },
   theme: {
+    recipes: {
+      // One plain button type style everywhere: Geist, medium weight, sentence case, no tracking tricks.
+      button: defineRecipe({
+        base: { fontFamily: "body", fontWeight: "medium", letterSpacing: "normal", textTransform: "none" },
+        variants: {
+          size: {
+            md: { textStyle: "sm" },
+            lg: { textStyle: "sm" },
+            xl: { textStyle: "md" },
+          },
+        },
+      }),
+    },
     tokens: {
       fonts: {
         heading: { value: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" },

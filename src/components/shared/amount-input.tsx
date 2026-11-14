@@ -69,13 +69,13 @@ export function AmountInput({
             placeholder="0.0"
             value={value}
             onChange={(event) => onChange(event.currentTarget.value)}
-            size="lg"
+            size="md"
             fontFamily="mono"
             borderRadius="xl"
             bg="bg.panel"
           />
         </InputGroup>
-        <Button size="lg" variant="outline" borderRadius="xl" disabled={!canMax} onClick={() => max && onChange(formatUnits(max.amount, decimals))}>
+        <Button size="md" variant="outline" borderRadius="xl" disabled={!canMax} onClick={() => max && onChange(formatUnits(max.amount, decimals))}>
           Max
         </Button>
       </HStack>

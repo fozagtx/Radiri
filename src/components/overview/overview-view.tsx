@@ -2,7 +2,7 @@
 
 import NextLink from "next/link";
 import { AbsoluteCenter, Badge, Box, Button, Card, Container, Flex, Grid, Heading, HStack, LinkBox, LinkOverlay, Progress, ProgressCircle, SimpleGrid, Stack, Stat, Text } from "@chakra-ui/react";
-import { ArrowRight, Wallet } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ActivityList } from "@/components/activity/activity-list";
 import { useActivityItems } from "@/components/activity/use-activity";
 import { TokenAvatar, TokenPair } from "@/components/app/token-avatar";
@@ -58,8 +58,7 @@ function ConnectHero() {
             <Text mt="3" color="fg.muted">
               Connect a NEAR testnet wallet to see your positions, mint test tokens and borrow.
             </Text>
-            <Button mt="6" size="lg" borderRadius="full" bg="ink" color="white" _hover={{ bg: "#2a2a2a" }} onClick={() => void wallet.signIn()} disabled={!wallet.ready || wallet.connecting}>
-              <Wallet size={18} aria-hidden />
+            <Button mt="6" size="md" borderRadius="full" bg="ink" color="white" _hover={{ bg: "#2a2a2a" }} onClick={() => void wallet.signIn()} disabled={!wallet.ready || wallet.connecting}>
               Connect NEAR wallet
             </Button>
           </Box>

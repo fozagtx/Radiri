@@ -116,13 +116,13 @@ export function ActionForm({
       {preview ? <ReasonList reasons={preview.reasons} /> : null}
 
       {needsWallet ? (
-        <Button type="button" size="lg" borderRadius="xl" variant="outline" onClick={() => void wallet.signIn()} disabled={wallet.connecting}>
+        <Button type="button" size="md" borderRadius="xl" variant="outline" onClick={() => void wallet.signIn()} disabled={wallet.connecting}>
           Connect NEAR wallet to sign
         </Button>
       ) : (
         <Button
           type="submit"
-          size="lg"
+          size="md"
           w="full"
           borderRadius="xl"
           bg="ink"

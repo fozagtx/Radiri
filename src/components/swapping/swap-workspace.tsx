@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Badge, Box, Button, Card, Collapsible, Container, DataList, Flex, Heading, HStack, IconButton, Input, SegmentGroup, Skeleton, Spinner, Stack, Text } from "@chakra-ui/react";
-import { ArrowDown, ChevronDown, Clock, Settings2, ShieldCheck, Wallet, Zap } from "lucide-react";
+import { ArrowDown, ChevronDown, Clock, ShieldCheck } from "lucide-react";
 import { TokenAvatar } from "@/components/app/token-avatar";
 import { CopyField } from "@/components/dashboard/copy-field";
 import { Note, Pill } from "@/components/shared/bits";
@@ -315,8 +315,7 @@ export function SwapWorkspace() {
                     Live quotes · refreshed every 20s
                   </HStack>
                   <Button size="xs" variant="ghost" borderRadius="full" color="fg.muted" onClick={() => setShowSettings((value) => !value)} aria-expanded={showSettings}>
-                    <Settings2 size={14} />
-                    {(slippageBps / 100).toFixed(1)}% slippage
+                    Slippage {(slippageBps / 100).toFixed(1)}%
                   </Button>
                 </Flex>
                 {showSettings ? (
@@ -456,13 +455,11 @@ export function SwapWorkspace() {
                     <HStack gap="2" wrap="wrap">
                       {origin.connect && !origin.address ? (
                         <Button size="xs" variant="outline" borderRadius="full" onClick={() => void origin.connect?.().catch((error: unknown) => setSendError(error instanceof Error ? error.message : String(error)))}>
-                          <Wallet size={13} />
                           Connect {origin.label}
                         </Button>
                       ) : null}
                       {destination.connect && !destination.address && destination.label !== origin.label ? (
                         <Button size="xs" variant="outline" borderRadius="full" onClick={() => void destination.connect?.().catch((error: unknown) => setSendError(error instanceof Error ? error.message : String(error)))}>
-                          <Wallet size={13} />
                           Connect {destination.label}
                         </Button>
                       ) : null}
@@ -473,8 +470,8 @@ export function SwapWorkspace() {
                 ) : null}
 
                 <Button
-                  size="xl"
-                  h="14"
+                  size="lg"
+                  h="13"
                   borderRadius="2xl"
                   bg="ink"
                   color="white"
@@ -485,7 +482,6 @@ export function SwapWorkspace() {
                   loadingText={cta.label}
                   onClick={() => void getExecutableQuote()}
                 >
-                  <Zap size={16} />
                   {cta.label}
                 </Button>
                 {live.state === "failed" ? <Note tone="bad">NEAR Intents: {live.failure.reason}</Note> : null}
@@ -526,8 +522,7 @@ export function SwapWorkspace() {
               {deadlinePassed ? (
                 <Note tone="warn">This quote expired. Get a fresh deposit address before sending anything.</Note>
               ) : walletFamily === "evm" || walletFamily === "solana" ? (
-                <Button size="lg" borderRadius="xl" bg="ink" color="white" _hover={{ bg: "#2a2a2a" }} loading={sending} disabled={!origin.address} onClick={() => void sendWithWallet(liveQuote)}>
-                  <TokenAvatar symbol={liveQuote.origin.symbol} category="meme" size="xs" />
+                <Button size="md" borderRadius="xl" bg="ink" color="white" _hover={{ bg: "#2a2a2a" }} loading={sending} disabled={!origin.address} onClick={() => void sendWithWallet(liveQuote)}>
                   {origin.address ? `Send ${trimAmount(liveQuote.amountIn, 4)} ${liveQuote.origin.symbol} with your ${origin.label}` : `Connect your ${origin.label} to send`}
                 </Button>
               ) : (

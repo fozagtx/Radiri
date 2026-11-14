@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Button, HStack, Stack, Text } from "@chakra-ui/react";
-import { Droplets } from "lucide-react";
 import { FAUCET_AMOUNT } from "@/lib/lending";
 import { groupDecimal, parseUnits } from "@/lib/risk";
 import { useNearWallet } from "@/lib/wallets/near";
@@ -44,8 +43,7 @@ export function FaucetButton({ asset }: { asset: AssetView }) {
   return (
     <Stack gap="1.5" align="flex-start">
       <HStack gap="2" wrap="wrap">
-        <Button size="sm" variant="outline" colorPalette="orange" borderStyle="dashed" borderRadius="full" loading={busy} onClick={() => void run()}>
-          <Droplets size={14} aria-hidden />
+        <Button size="sm" variant="outline" borderRadius="full" loading={busy} onClick={() => void run()}>
           {`Mint ${groupDecimal(whole)} ${asset.config.symbol}`}
         </Button>
         <Text textStyle="xs" color="fg.muted">

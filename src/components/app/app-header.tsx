@@ -3,7 +3,7 @@
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { Box, Button, Container, Flex, HStack, Link, Popover, Portal, Text } from "@chakra-ui/react";
-import { ChevronDown, Wallet } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { LiveTicker } from "@/components/app/live-ticker";
 import { ModeBadge, WalletSection } from "@/components/dashboard/wallet-section";
 import { isActive, PRIMARY_NAV } from "@/components/dashboard/nav";
@@ -33,9 +33,8 @@ function WalletMenu() {
           color={connected.length ? "fg" : "white"}
           _hover={{ bg: connected.length ? "bg.subtle" : "#2a2a2a" }}
         >
-          <Wallet size={15} aria-hidden />
           {connected.length ? (
-            <Text as="span" fontFamily="mono" textStyle="xs">
+            <Text as="span">
               {short(connected[0])}
               {connected.length > 1 ? ` +${connected.length - 1}` : ""}
             </Text>
