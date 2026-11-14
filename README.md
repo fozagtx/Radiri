@@ -57,6 +57,22 @@ to their owners and are used only to identify the assets.
 | RHEA | RHEA Lending read live as the reference market (it lists no meme coins or stocks) |
 | FastNEAR RPC | Contract views |
 
+## Tooling
+
+| Tool | What it does here |
+| --- | --- |
+| Next.js 16 (App Router, Turbopack) + React 19 + Chakra UI 3 | the app and its route handlers |
+| near-sdk 5.30 (Rust) | `contracts/lending` and `contracts/test-token` |
+| near-api-js 7.5 | `scripts/testnet-deploy.ts`, `scripts/oracle-push.ts`, the oracle reporter and the sponsor faucet |
+| NEAR Connect (`@hot-labs/near-connect`) | wallet signature for every lending action |
+| 1Click SDK (`@defuse-protocol/one-click-sdk-typescript`) | swap catalog, quotes, deposit addresses, status |
+| FastNEAR RPC | contract views and transaction submission |
+| NEAR testnet helper faucet (`helper.testnet.near.org`) | creates the deploy owner and its sub-accounts |
+| Sponsor faucet (`POST /api/faucet/account`) | sends 1 test NEAR to a wallet-generated implicit account so a first-time user can mint without leaving the app |
+| wagmi + viem, `@solana/wallet-adapter-react` | EVM and Solana wallets for swap deposits |
+| Prisma + PostgreSQL (optional) | swap-history index; never a source of truth |
+| Vitest, `cargo test` | financial math and contract tests |
+
 **Why its own lending contract:** RHEA Lending's 26 mainnet reserves include no meme coin and no
 tokenized stock. **Why a pushed oracle:** Pyth on NEAR has no equity feeds and the OutLayer oracle
 has no stocks, so a reporter whose key can only call `report_prices` pushes 1Click prices, and the
@@ -85,7 +101,10 @@ pnpm dev                 # http://localhost:3000 -> Open the app
 
 It talks to the deployed testnet contract out of the box. To keep prices fresh, put the reporter
 key in `.env.local` / Vercel (`RADIRI_ORACLE_ACCOUNT`, `RADIRI_ORACLE_PRIVATE_KEY`); without it
-borrowing pauses whenever prices go stale, exactly as the contract enforces.
+borrowing pauses whenever prices go stale, exactly as the contract enforces. A wallet whose
+testnet account does not exist yet is funded 1 test NEAR by the sponsor faucet
+(`RADIRI_FAUCET_ACCOUNT`, `RADIRI_FAUCET_PRIVATE_KEY`) before its first mint; without it, users
+must connect an account that already exists.
 
 ```sh
 pnpm deploy:testnet my-name.testnet   # your own copy: faucet account, tokens, lending, oracle key
@@ -98,9 +117,9 @@ pnpm journeys:testnet                 # replay journeys A and B as real testnet 
 ```text
 src/app/(app)/   overview, borrow, swap, portfolio, markets, activity
 src/app/api/     assets, pricing, swaps/{quote,status,submit}, lending/{markets,account},
-                 oracle/refresh, rhea/lending, transactions
+                 oracle/refresh, faucet/account, rhea/lending, transactions
 src/lib/         intents (1Click), lending (contract client), risk (contract math mirror),
-                 oracle (prices, push), rhea, near, wallets (NEAR, EVM, Solana)
+                 oracle (prices, push), faucet (sponsor), rhea, near, wallets (NEAR, EVM, Solana)
 src/config/      deployment.ts (testnet ids), lending-assets.ts (risk parameters), assets.ts
 contracts/       lending, test-token (cargo workspace)
 scripts/         testnet-deploy.ts, testnet-journeys.ts, oracle-push.ts, gen-lending-artifacts.ts

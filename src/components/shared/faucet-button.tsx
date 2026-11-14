@@ -2,13 +2,32 @@
 
 import { useState } from "react";
 import { Button, HStack, Stack, Text } from "@chakra-ui/react";
-import { FAUCET_AMOUNT } from "@/lib/lending";
+import { FAUCET_AMOUNT, txExplorerUrl } from "@/lib/lending";
 import { groupDecimal, parseUnits } from "@/lib/risk";
 import { useNearWallet } from "@/lib/wallets/near";
 import type { AssetView } from "@/types/protocol";
 import { TxLinks } from "./bits";
 import { message } from "./format";
 import { useLending } from "./lending-provider";
+
+/**
+ * Advances a wallet-generated implicit account that does not exist on chain yet. Returns the
+ * funding transaction hash, or null when the account already existed.
+ */
+async function ensureAccountFunded(accountId: string): Promise<string | null> {
+  const res = await fetch("/api/faucet/account", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ accountId }),
+  });
+  const body = (await res.json().catch(() => null)) as { funded?: boolean; txHash?: string | null; reason?: string | null; error?: string } | null;
+  if (!res.ok) throw new Error(body?.error ?? `Faucet HTTP ${res.status}`);
+  if (body?.funded) return body.txHash ?? null;
+  if (body?.reason === "account already exists") return null;
+  throw new Error(
+    `${accountId} is not funded on NEAR testnet and the app could not fund it (${body?.reason ?? "unknown reason"}). Connect a testnet account that already exists.`,
+  );
+}
 
 /**
  * Clearly labelled test-token faucet. On chain it calls the Radiri test token's
@@ -23,7 +42,8 @@ export function FaucetButton({ asset }: { asset: AssetView }) {
   const whole = FAUCET_AMOUNT[asset.config.symbol] ?? "1";
 
   async function run() {
-    if (!lending.walletAccountId) {
+    const accountId = lending.walletAccountId;
+    if (!accountId) {
       await wallet.signIn();
       return;
     }
@@ -31,8 +51,12 @@ export function FaucetButton({ asset }: { asset: AssetView }) {
     setError(null);
     setHashes(null);
     try {
+      const fundingTx = await ensureAccountFunded(accountId);
       const result = await lending.faucet(asset.config.token_id, parseUnits(whole, asset.config.decimals).toString());
-      setHashes({ hashes: result.txHashes, urls: result.explorerUrls });
+      setHashes({
+        hashes: fundingTx ? [fundingTx, ...result.txHashes] : result.txHashes,
+        urls: fundingTx ? [txExplorerUrl(fundingTx), ...result.explorerUrls] : result.explorerUrls,
+      });
     } catch (caught) {
       setError(message(caught));
     } finally {
