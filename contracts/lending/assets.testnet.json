@@ -1,0 +1,163 @@
+[
+  {
+    "token_id": "tpepe.radiri.testnet",
+    "symbol": "tPEPE",
+    "decimals": 18,
+    "category": "meme",
+    "can_collateralize": true,
+    "can_borrow": true,
+    "ltv_bps": 2500,
+    "liquidation_threshold_bps": 4000,
+    "liquidation_bonus_bps": 1500,
+    "reserve_factor_bps": 2000,
+    "collateral_cap": "500000000000000000000000000000",
+    "borrow_cap": "0",
+    "interest": {
+      "base_bps": 200,
+      "slope1_bps": 1200,
+      "slope2_bps": 30000,
+      "optimal_utilization_bps": 6000
+    },
+    "max_price_age_sec": 300,
+    "max_price_change_bps": 5000,
+    "paused": false
+  },
+  {
+    "token_id": "twif.radiri.testnet",
+    "symbol": "tWIF",
+    "decimals": 6,
+    "category": "meme",
+    "can_collateralize": true,
+    "can_borrow": true,
+    "ltv_bps": 2500,
+    "liquidation_threshold_bps": 4000,
+    "liquidation_bonus_bps": 1500,
+    "reserve_factor_bps": 2000,
+    "collateral_cap": "20000000000000",
+    "borrow_cap": "0",
+    "interest": {
+      "base_bps": 200,
+      "slope1_bps": 1200,
+      "slope2_bps": 30000,
+      "optimal_utilization_bps": 6000
+    },
+    "max_price_age_sec": 300,
+    "max_price_change_bps": 5000,
+    "paused": false
+  },
+  {
+    "token_id": "tshib.radiri.testnet",
+    "symbol": "tSHIB",
+    "decimals": 18,
+    "category": "meme",
+    "can_collateralize": true,
+    "can_borrow": true,
+    "ltv_bps": 2500,
+    "liquidation_threshold_bps": 4000,
+    "liquidation_bonus_bps": 1500,
+    "reserve_factor_bps": 2000,
+    "collateral_cap": "500000000000000000000000000000",
+    "borrow_cap": "0",
+    "interest": {
+      "base_bps": 200,
+      "slope1_bps": 1200,
+      "slope2_bps": 30000,
+      "optimal_utilization_bps": 6000
+    },
+    "max_price_age_sec": 300,
+    "max_price_change_bps": 5000,
+    "paused": false
+  },
+  {
+    "token_id": "tbrett.radiri.testnet",
+    "symbol": "tBRETT",
+    "decimals": 18,
+    "category": "meme",
+    "can_collateralize": true,
+    "can_borrow": true,
+    "ltv_bps": 2500,
+    "liquidation_threshold_bps": 4000,
+    "liquidation_bonus_bps": 1500,
+    "reserve_factor_bps": 2000,
+    "collateral_cap": "500000000000000000000000000",
+    "borrow_cap": "0",
+    "interest": {
+      "base_bps": 200,
+      "slope1_bps": 1200,
+      "slope2_bps": 30000,
+      "optimal_utilization_bps": 6000
+    },
+    "max_price_age_sec": 300,
+    "max_price_change_bps": 5000,
+    "paused": false
+  },
+  {
+    "token_id": "taapl.radiri.testnet",
+    "symbol": "tAAPL",
+    "decimals": 8,
+    "category": "stock",
+    "can_collateralize": true,
+    "can_borrow": true,
+    "ltv_bps": 5000,
+    "liquidation_threshold_bps": 6500,
+    "liquidation_bonus_bps": 800,
+    "reserve_factor_bps": 1500,
+    "collateral_cap": "1000000000000",
+    "borrow_cap": "0",
+    "interest": {
+      "base_bps": 100,
+      "slope1_bps": 800,
+      "slope2_bps": 20000,
+      "optimal_utilization_bps": 7000
+    },
+    "max_price_age_sec": 900,
+    "max_price_change_bps": 2000,
+    "paused": false
+  },
+  {
+    "token_id": "ttsla.radiri.testnet",
+    "symbol": "tTSLA",
+    "decimals": 8,
+    "category": "stock",
+    "can_collateralize": true,
+    "can_borrow": true,
+    "ltv_bps": 5000,
+    "liquidation_threshold_bps": 6500,
+    "liquidation_bonus_bps": 800,
+    "reserve_factor_bps": 1500,
+    "collateral_cap": "1000000000000",
+    "borrow_cap": "0",
+    "interest": {
+      "base_bps": 100,
+      "slope1_bps": 800,
+      "slope2_bps": 20000,
+      "optimal_utilization_bps": 7000
+    },
+    "max_price_age_sec": 900,
+    "max_price_change_bps": 2000,
+    "paused": false
+  },
+  {
+    "token_id": "tnvda.radiri.testnet",
+    "symbol": "tNVDA",
+    "decimals": 8,
+    "category": "stock",
+    "can_collateralize": true,
+    "can_borrow": true,
+    "ltv_bps": 5000,
+    "liquidation_threshold_bps": 6500,
+    "liquidation_bonus_bps": 800,
+    "reserve_factor_bps": 1500,
+    "collateral_cap": "1000000000000",
+    "borrow_cap": "0",
+    "interest": {
+      "base_bps": 100,
+      "slope1_bps": 800,
+      "slope2_bps": 20000,
+      "optimal_utilization_bps": 7000
+    },
+    "max_price_age_sec": 900,
+    "max_price_change_bps": 2000,
+    "paused": false
+  }
+]

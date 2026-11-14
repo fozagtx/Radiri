@@ -38,7 +38,7 @@
     ".next/dev/dev/types/**/*.ts"
   ],
   "exclude": [
-    "contract",
+    "contracts",
     "node_modules"
   ]
 }

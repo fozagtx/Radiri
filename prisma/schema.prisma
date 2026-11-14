@@ -1,0 +1,220 @@
+// Radiri optional PostgreSQL index.
+//
+// INDEXING ONLY. This database is never a source of truth for balances, collateral or debt.
+// The lending contract views (NEAR RPC) and the 1Click status API are authoritative; every row here
+// is an observation Radiri recorded for history, search and analytics, and may lag or be incomplete.
+// The app runs fully without DATABASE_URL.
+//
+// Units: token amounts are integer base units (Decimal(78,0) holds any u256); price_wad / value_wad
+// are USD x 1e18 integers. Human-readable amounts are stored as exact decimal strings.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  wallets   Wallet[]
+}
+
+/// A chain Radiri has seen activity on: "near-mainnet", "near-testnet", or a 1Click blockchain id ("eth", "sol", ...).
+model Network {
+  id        String          @id
+  name      String
+  family    String // "near" | "evm" | "solana" | "other"
+  isTestnet Boolean         @default(false)
+  wallets   Wallet[]
+  assets    Asset[]
+  markets   LendingMarket[]
+}
+
+model Wallet {
+  id        String            @id @default(cuid())
+  address   String
+  networkId String
+  network   Network           @relation(fields: [networkId], references: [id])
+  userId    String?
+  user      User?             @relation(fields: [userId], references: [id])
+  createdAt DateTime          @default(now())
+  swaps     SwapTransaction[]
+
+  @@unique([networkId, address])
+}
+
+/// Catalog snapshot row: a 1Click asset id ("nep141:...") or a NEAR token account id for lending-only assets.
+model Asset {
+  id              String              @id
+  networkId       String
+  network         Network             @relation(fields: [networkId], references: [id])
+  symbol          String
+  name            String?
+  decimals        Int
+  category        String // "meme" | "stock" | "stable" | "major" | "rwa" | "other"
+  contractAddress String?
+  origin          String // "1click-live" | "lending-contract" | "testnet-test-token"
+  isTestToken     Boolean             @default(false)
+  referenceSymbol String?
+  updatedAt       DateTime            @updatedAt
+  eligibility     AssetEligibility?
+  observations    OracleObservation[]
+
+  @@index([symbol])
+  @@index([category])
+}
+
+/// Independent eligibility flags as observed at `observedAt`.
+model AssetEligibility {
+  assetId    String   @id
+  asset      Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  swap       Boolean
+  collateral Boolean
+  borrow     Boolean
+  source     String // "1click-live+lending-assets-table" | "1click-live+lending-contract"
+  observedAt DateTime
+}
+
+/// A lending contract reserve as last observed (configuration only; balances live on-chain).
+model LendingMarket {
+  id                      String               @id @default(cuid())
+  contractId              String
+  networkId               String
+  network                 Network              @relation(fields: [networkId], references: [id])
+  tokenId                 String
+  symbol                  String
+  ltvBps                  Int
+  liquidationThresholdBps Int
+  liquidationBonusBps     Int
+  observedAt              DateTime
+  collateralPositions     CollateralPosition[]
+  borrowPositions         BorrowPosition[]
+  repayments              Repayment[]
+
+  @@unique([contractId, tokenId])
+}
+
+/// Snapshot of an account's collateral in one market, copied from get_account at `blockHeight`.
+model CollateralPosition {
+  id          String        @id @default(cuid())
+  marketId    String
+  market      LendingMarket @relation(fields: [marketId], references: [id])
+  accountId   String
+  amount      Decimal       @db.Decimal(78, 0)
+  valueWad    Decimal?      @db.Decimal(78, 0)
+  blockHeight BigInt?
+  observedAt  DateTime      @default(now())
+
+  @@index([accountId])
+  @@index([marketId, observedAt])
+}
+
+/// Snapshot of an account's debt in one market, copied from get_account at `blockHeight`.
+model BorrowPosition {
+  id          String        @id @default(cuid())
+  marketId    String
+  market      LendingMarket @relation(fields: [marketId], references: [id])
+  accountId   String
+  amount      Decimal       @db.Decimal(78, 0)
+  valueWad    Decimal?      @db.Decimal(78, 0)
+  blockHeight BigInt?
+  observedAt  DateTime      @default(now())
+
+  @@index([accountId])
+  @@index([marketId, observedAt])
+}
+
+/// A repay event seen on-chain (NEP-297 "repay").
+model Repayment {
+  id          String        @id @default(cuid())
+  marketId    String
+  market      LendingMarket @relation(fields: [marketId], references: [id])
+  accountId   String
+  amount      Decimal       @db.Decimal(78, 0)
+  txHash      String?
+  blockHeight BigInt?
+  timestamp   DateTime
+
+  @@index([accountId, timestamp])
+}
+
+/// A 1Click swap started from Radiri. Rows are written only from what the 1Click status API returns
+/// for the deposit address (including its signed quoteResponse), never from client-supplied amounts.
+model SwapTransaction {
+  id                 String             @id @default(cuid())
+  depositAddress     String
+  depositMemo        String             @default("")
+  originAssetId      String
+  destinationAssetId String
+  amountInBase       String
+  amountOutBase      String?
+  minAmountOutBase   String?
+  recipient          String
+  refundTo           String
+  deadline           DateTime?
+  depositTxHash      String?
+  lastStatus         String
+  quoteResponse      Json
+  correlationId      String?
+  walletId           String?
+  wallet             Wallet?            @relation(fields: [walletId], references: [id])
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  events             TransactionEvent[]
+
+  @@unique([depositAddress, depositMemo])
+  @@index([recipient])
+  @@index([refundTo])
+}
+
+/// Status transitions and submissions observed for a swap.
+model TransactionEvent {
+  id        String           @id @default(cuid())
+  swapId    String
+  swap      SwapTransaction  @relation(fields: [swapId], references: [id], onDelete: Cascade)
+  kind      String // "status" | "deposit_submitted"
+  status    String?
+  txHash    String?
+  payload   Json?
+  createdAt DateTime         @default(now())
+
+  @@index([swapId, createdAt])
+}
+
+/// A reference price as reported by its source (1Click or the lending oracle).
+model OracleObservation {
+  id         String   @id @default(cuid())
+  assetId    String?
+  asset      Asset?   @relation(fields: [assetId], references: [id])
+  symbol     String
+  source     String // "1click" | "lending-oracle"
+  priceUsd   String // exact decimal string as reported
+  priceWad   Decimal? @db.Decimal(78, 0)
+  observedAt DateTime
+  fresh      Boolean
+  recordedAt DateTime @default(now())
+
+  @@index([symbol, observedAt])
+}
+
+/// A liquidation seen on-chain (NEP-297 "liquidate" / "liquidated").
+model LiquidationEvent {
+  id                String   @id @default(cuid())
+  contractId        String
+  borrower          String
+  liquidator        String
+  debtTokenId       String
+  collateralTokenId String
+  repaidAmount      Decimal  @db.Decimal(78, 0)
+  seizedAmount      Decimal  @db.Decimal(78, 0)
+  txHash            String?
+  blockHeight       BigInt?
+  timestamp         DateTime
+
+  @@index([borrower, timestamp])
+}

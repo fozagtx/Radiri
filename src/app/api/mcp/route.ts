@@ -1,7 +1,11 @@
 import { connection } from "next/server";
+import { filterCatalog, isAssetCategory, isEligibilityFilter } from "@/config/assets";
+import { getClassifiedCatalog } from "@/lib/intents/catalog";
+import { quoteSwap } from "@/lib/intents/swap";
 import { getStableAssets } from "@/lib/radiri/catalog";
 import { buildMatrix, compareRoutes } from "@/lib/radiri/engine";
 import type { PairRef } from "@/lib/radiri/types";
+import type { CatalogAsset } from "@/types/protocol";
 
 const PROTOCOL_VERSION = "2025-06-18";
 
@@ -12,6 +16,17 @@ const PAIR_SCHEMA = {
     chain: { type: "string", description: "1Click chain id, e.g. near, eth, arb, base, sol" },
   },
   required: ["symbol", "chain"],
+  additionalProperties: false,
+} as const;
+
+const ASSET_REF_SCHEMA = {
+  type: "object",
+  description: "Either { assetId } (1Click asset id) or { symbol, chain } (e.g. PEPE on eth, AAPLon on bsc)",
+  properties: {
+    assetId: { type: "string", description: "1Click asset id, e.g. nep141:eth-0x6982...omft.near" },
+    symbol: { type: "string", description: "Symbol, e.g. PEPE, $WIF, AAPLon, XAUT" },
+    chain: { type: "string", description: "1Click chain id, e.g. eth, sol, base, bsc, near" },
+  },
   additionalProperties: false,
 } as const;
 
@@ -53,6 +68,38 @@ const TOOLS = [
     title: "List stablecoins",
     description: "List every stablecoin Radiri can quote, with 1Click asset id, chain, decimals and USD price.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "list_assets",
+    title: "List classified assets",
+    description:
+      "List the live NEAR Intents 1Click catalog (meme coins, Ondo tokenized stocks, stables, majors, RWAs) plus Radiri lending assets. Each asset has a category and independent eligibility flags: swap (live in 1Click), collateral and borrow (Radiri lending registry). Testnet test tokens are flagged isTestToken.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", enum: ["meme", "stock", "stable", "major", "rwa", "other"] },
+        eligible: { type: "string", enum: ["swap", "collateral", "borrow"] },
+        query: { type: "string", description: "Case-insensitive symbol or name filter, e.g. PEPE or apple" },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "quote_swap",
+    title: "Quote a cross-chain swap (dry run)",
+    description:
+      "Indicative (dry) NEAR Intents 1Click quote for a cross-chain swap, e.g. a meme coin into a tokenized stock. Never returns a deposit address and never moves funds. Returns amount out, minimum out, USD values, fees and ETA, or 1Click's verbatim failure reason (e.g. 'No liquidity available').",
+    inputSchema: {
+      type: "object",
+      properties: {
+        from: ASSET_REF_SCHEMA,
+        to: ASSET_REF_SCHEMA,
+        amount: { type: "string", description: "Human units of the from asset as a decimal string, e.g. \"10000000\"" },
+        slippageBps: { type: "integer", minimum: 0, maximum: 5000, description: "Slippage tolerance, default 100" },
+      },
+      required: ["from", "to", "amount"],
+      additionalProperties: false,
+    },
   },
 ];
 
@@ -103,7 +150,57 @@ async function callTool(name: string, args: Record<string, unknown>) {
     return { count: assets.length, assets };
   }
 
+  if (name === "list_assets") {
+    const category = typeof args.category === "string" ? args.category : null;
+    const eligible = typeof args.eligible === "string" ? args.eligible : null;
+    if (category && !isAssetCategory(category)) throw new Error(`category must be one of meme, stock, stable, major, rwa, other`);
+    if (eligible && !isEligibilityFilter(eligible)) throw new Error(`eligible must be one of swap, collateral, borrow`);
+    const catalog = await getClassifiedCatalog();
+    const query = typeof args.query === "string" ? args.query.trim().toLowerCase() : "";
+    const assets = filterCatalog(catalog.assets, {
+      category: category && isAssetCategory(category) ? category : null,
+      eligible: eligible && isEligibilityFilter(eligible) ? eligible : null,
+    }).filter(
+      (asset) => !query || asset.symbol.toLowerCase().includes(query) || (asset.name ?? "").toLowerCase().includes(query),
+    );
+    return { count: assets.length, fetchedAt: catalog.fetchedAt, lending: catalog.lending, assets };
+  }
+
+  if (name === "quote_swap") {
+    const catalog = await getClassifiedCatalog();
+    const origin = resolveAssetRef(catalog.assets, args.from, "from");
+    const destination = resolveAssetRef(catalog.assets, args.to, "to");
+    if (typeof args.amount !== "string" && typeof args.amount !== "number") throw new Error("amount is required");
+    // Dry only: this tool can never produce a deposit address.
+    return quoteSwap({
+      originAssetId: origin.id,
+      destinationAssetId: destination.id,
+      amount: String(args.amount),
+      slippageBps: args.slippageBps === undefined ? 100 : Number(args.slippageBps),
+      dry: true,
+    });
+  }
+
   throw new Error(`Unknown tool: ${name}`);
+}
+
+function resolveAssetRef(assets: CatalogAsset[], ref: unknown, label: string): CatalogAsset {
+  const value = (ref && typeof ref === "object" ? ref : {}) as { assetId?: unknown; symbol?: unknown; chain?: unknown };
+  const swappable = assets.filter((asset) => asset.eligibility.swap);
+  if (typeof value.assetId === "string" && value.assetId) {
+    const match = swappable.find((asset) => asset.id === value.assetId);
+    if (!match) throw new Error(`${label}: ${value.assetId} is not in the live 1Click catalog`);
+    return match;
+  }
+  if (typeof value.symbol !== "string" || !value.symbol) throw new Error(`${label} needs { assetId } or { symbol, chain }`);
+  const symbol = value.symbol.trim().toUpperCase();
+  const chain = typeof value.chain === "string" ? value.chain.trim().toLowerCase() : "";
+  const matches = swappable.filter((asset) => asset.symbol.toUpperCase() === symbol && (!chain || asset.chain === chain));
+  if (matches.length === 0) throw new Error(`${label}: no ${value.symbol}${chain ? ` on ${chain}` : ""} in the live 1Click catalog`);
+  if (matches.length > 1) {
+    throw new Error(`${label}: ${value.symbol} is listed on ${matches.map((asset) => asset.chain).join(", ")}; pass chain`);
+  }
+  return matches[0];
 }
 
 export async function POST(request: Request) {
@@ -126,7 +223,7 @@ export async function POST(request: Request) {
       capabilities: { tools: {} },
       serverInfo: { name: "radiri", version: "0.1.0" },
       instructions:
-        "Radiri compares stablecoin swap routes on NEAR. Quotes are dry runs from live sources: NEAR Intents 1Click across chains and the Rhea Smart Router on NEAR.",
+        "Radiri compares stablecoin swap routes on NEAR and quotes cross-chain swaps (meme coins, tokenized stocks) through NEAR Intents 1Click. Every quote here is a dry run from live sources: no deposit address, no funds move. Use list_assets to find asset ids, quote_swap for a cross-chain swap quote, compare_routes for stablecoin routes.",
     });
   }
 

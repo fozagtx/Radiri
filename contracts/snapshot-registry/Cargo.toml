@@ -1,0 +1,20 @@
+[package]
+name = "radiri-contract"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/OWNER/REPO"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = "5.30.1"
+
+[dev-dependencies]
+near-sdk = { version = "5.30.1", features = ["unit-testing"] }
+near-workspaces = { version = "0.24.0", features = ["unstable"] }
+tokio = { version = "1", features = ["full"] }
+serde_json = "1"
+
+# The release profile lives in the workspace manifest (contracts/Cargo.toml).

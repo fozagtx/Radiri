@@ -1,237 +1,169 @@
 # Radiri
 
-Cross-chain stablecoin liquidity monitor and route aggregator on NEAR.
+Borrow tokenized stocks against your meme coins, borrow meme coins against tokenized stocks, and
+swap one for the other across chains. Settled on NEAR.
 Built at [NEAR HACKATHON](https://nearhackathon.com) (2026-11-01 to 2026-11-14).
 
-Ask one question: what does it actually cost to move 100,000 USDC from one chain or issuer
-to another right now, and who can fill that size?
-
-Radiri aggregates every route (NEAR Intents 1Click across chains, Rhea Smart Router on
-NEAR), normalizes each quote to basis points, flags the routes that cannot fill the size,
-has a NEAR AI Cloud model explain the result, and records each round on a NEAR contract so
-a quote can be checked after the fact.
+- **Borrow stocks with meme coins.** Deposit PEPE, keep your exposure, borrow tokenized Apple.
+- **Borrow meme coins with stocks.** Deposit tokenized NVIDIA, borrow PEPE.
+- **Swap meme coins for stocks across chains.** PEPE on Ethereum to tokenized Apple (AAPLon) on BNB
+  Chain in one NEAR Intents swap, and back.
 
 ## Status
 
 | Piece | State |
 | --- | --- |
-| Live demo | https://radiri.vercel.app |
-| Live quoting (1Click + Rhea), aggregation, matrix, opportunities | Working, no keys needed |
-| AI analyst | Working with `NEARAI_API_KEY`, otherwise reports the missing key |
-| Snapshot contract | Deployed on testnet at `radiri.testnet`, 10 snapshot rows written by the monitor |
-| Monitor script | Working, writes batches with a reporter key limited to `record_snapshots` |
-| MCP endpoint | `POST /api/mcp`, exposes `compare_routes`, `liquidity_matrix`, `list_stablecoins` |
+| Cross-chain meme coin <-> tokenized stock swaps | **Live on mainnet** through NEAR Intents 1Click: real quotes, deposit address, wallet send (EVM, Solana) or manual send, settlement tracked from 1Click |
+| Lending contract (`contracts/lending`) | Built and tested (52 unit tests, wasm 317 KB). Deploys to **testnet** with `scripts/deploy-lending.sh`; not deployed from this environment because deploying signs with your testnet keys |
+| Lending UI (Borrow, Portfolio, Overview, Activity) | Works against the contract when `NEXT_PUBLIC_LENDING_CONTRACT_ID` is set. Without it, a **labelled simulation** runs the same risk engine on live prices; nothing is signed and the banner says so on every page |
+| Prices | Live from 1Click: meme coins by symbol, stocks by their Ondo token (AAPLon, TSLAon, NVDAon) |
+| Markets | Radiri markets, the live 1Click meme/stock catalog, and RHEA Lending's live mainnet reserves as a reference |
+| Route monitor (pre-pivot feature) | Stablecoin route comparison, kept at `/routes` |
 
-No mock data anywhere. Every number on screen comes from a live source, and every failure
-is shown with its verbatim reason.
+Tokenized stocks are Ondo Global Markets tokens listed by 1Click. Their availability depends on
+your region and on NEAR Intents. Lending uses testnet test tokens that have **no value**; their
+oracle prices mirror the real assets so positions behave like the real market.
 
-## Contents
+## Three journeys
 
-- [The problem](#the-problem)
-- [What it does](#what-it-does)
-- [Try it: do X, see Y](#try-it-do-x-see-y)
-- [How NEAR fits in](#how-near-fits-in)
-- [Trust and safety model](#trust-and-safety-model)
-- [Architecture](#architecture)
-- [Contract](#contract)
-- [Monitor](#monitor)
-- [Environment](#environment)
-- [Verification](#verification)
-- [Built with](#built-with)
-- [License](#license)
+**A. Meme coin collateral, borrow a stock** (`/borrow`, tab "Borrow stocks with meme coins")
+Connect NEAR wallet -> deposit tPEPE (`ft_transfer_call` with `{"action":"deposit_collateral"}`) ->
+borrowing power = collateral value x 25% LTV -> pick tAAPL -> review health factor, LTV,
+liquidation price, oracle freshness -> `borrow` -> position on Portfolio.
 
-## The problem
+**B. Stock collateral, borrow a meme coin** (`/borrow`, tab "Borrow meme coins with stocks")
+Same flow with tAAPL / tTSLA / tNVDA as collateral (50% LTV) and a meme coin as the loan.
 
-Stablecoin treasury movement is priced by feel. Two sources for the same pair can differ by
-tens of basis points, and some routes quietly stop quoting above a certain size. A team
-moving a 10,000 or a 100,000 transfer has no single place showing the cost, the worst
-case at the quoted slippage, and which source actually has liquidity at that size.
+**C. Meme coin to stock, cross-chain** (`/swap`)
+Pick PEPE on Ethereum and AAPLon on BNB Chain -> live dry quote (estimated output, minimum output,
+fees, ETA) -> recipient and refund addresses -> executable quote with a deposit address and
+deadline -> send from your EVM or Solana wallet (or any wallet manually) -> 1Click status until
+`SUCCESS`, `REFUNDED` or `FAILED`.
 
-## What it does
-
-- Quotes NEAR Intents 1Click and the Rhea Smart Router in parallel for one pair and size,
-  server side, always as a dry run.
-- Shows amount received, cost in basis points against a 1:1 peg (negative means the user
-  receives more than they sent), worst case at the quoted slippage, reported fees and ETA.
-- Flags four kinds of finding from real quote data: `liquidity-gap` (one source has no route
-  at this size and another fills it), `expensive-route`, `cross-chain-spread` (the same
-  stable pair is cheaper from another chain) and `source-divergence` (the two sources
-  disagree on the same pair).
-- Sweeps a 32-cell matrix of stablecoin pairs at the chosen size in one request.
-- Sends the quote set to a NEAR AI Cloud model for a plain-language read, including the TEE
-  signature endpoint when the reply is signed.
-- Records snapshots on a NEAR contract through a reporter account, so history is on chain.
-
-## Try it: do X, see Y
-
-Requires Node 20+ and pnpm. No wallet, key or account is needed for the quotes; they are
-public dry runs.
-
-```sh
-pnpm install
-pnpm dev
-```
-
-Open http://localhost:3000. It loads `USDC on near` to `USDT on near` at 100,000.
-
-1. **See a liquidity gap at 100,000.** The hero shows NEAR Intents returning
-   `No liquidity available` verbatim while Rhea fills the same pair at 99,831 USDT (about
-   16.8 bps). The opportunities panel flags both NEAR directions as `liquidity-gap` and adds
-   a `cross-chain-spread` for USDC to USDT on eth versus near.
-2. **Lower the amount to 10,000.** Both sources quote now: NEAR Intents returns 10,004 USDT
-   (-4.1 bps), Rhea 9,988 USDT (11.9 bps). The `liquidity-gap` flags disappear and
-   `source-divergence` appears, about 16 bps on the same pair.
-3. **Raise the amount to 1,000,000.** NEAR Intents still has no route and Rhea fills only
-   456,333 USDT, a cost of 5,436.7 bps, so both sources fail at that size. Change the target
-   to `USDT on sol` at the same size and neither source returns a route.
-4. **Click Recheck** to requote, and use the swap toggle to see the reverse pair.
-5. **Open the liquidity matrix panel.** It quotes 32 pairs at the current size and lists
-   every gap it finds. At 100,000 both NEAR directions show up.
-6. **Ask the AI analyst.** With `NEARAI_API_KEY` set it reads the exact quote payload and
-   explains which route to take. Without a key the panel says so instead of guessing.
-7. **Read the on-chain snapshots panel.** With a deployed contract and a monitor run it
-   lists the rows the contract holds. Without a contract id the endpoint returns the reason,
-   not empty data.
-
-The numbers above were observed on 2026-11-13 and are used only as demo sizes, not as
-expected values. Live quotes move, and every figure on screen is fetched at render time.
+Checked on 2026-11-14: 1B PEPE (eth) quoted 12.27 AAPLon (bsc) with a 63 s ETA; 1 NVDAon quoted
+80.25M PEPE; PEPE to `nZHIPU` returned the verbatim `No liquidity available`. Live numbers move.
 
 ## How NEAR fits in
 
-| NEAR piece | What Radiri uses it for |
+| NEAR piece | Use |
 | --- | --- |
-| NEAR Intents (1Click) | Cross-chain route source. Quotes via `POST /v0/quote` with `dry: true`, so nothing is deposited or swapped. |
-| Rhea Smart Router | NEAR-native AMM route source via `swapMultiDexPath`, the source that fills pairs 1Click will not quote. |
-| NEAR contract (`contract/`) | Snapshot registry. Reporter-only writes, latest snapshot per pair and source, 48-entry ring buffer, NEP-297 event, view methods. |
-| NEAR AI Cloud | The analyst: OpenAI-compatible chat completions in a TEE, plus `GET /v1/signature/{chat_id}` for the reply signature and signing address. |
-| NEAR wallet and JSON-RPC | `@hot-labs/near-connect` for the wallet header, FastNEAR public RPC for read-only contract views. The app sends no transaction. |
+| NEAR smart contract (Rust, near-sdk 5.30) | `contracts/lending`: collateral custody, debt, interest, oracle, liquidation; on-chain state is the source of truth |
+| NEAR Intents 1Click (official TypeScript SDK) | Token catalog with tokenized stocks, quotes, deposit addresses, deposit submission, execution status |
+| NEAR Connect (`@hot-labs/near-connect`) | NEAR wallet for lending transactions |
+| RHEA | Smart Router quotes on the route monitor; RHEA Lending reserves read live as the reference market |
+| FastNEAR RPC | Contract views |
 
-Quotes come from mainnet liquidity because NEAR Intents has no testnet. The registry
-contract deploys to testnet with free testnet NEAR.
+### Why a custom lending contract instead of RHEA Lending
 
-## Trust and safety model
+RHEA Lending (`contract.main.burrow.near`) was checked live: its 26 reserves are stables, NEAR and
+liquid staking tokens, BTC/ETH variants, ZEC, QTC and RHEA tokens. None is a meme coin or a
+tokenized stock, so it cannot hold PEPE as collateral or lend AAPL. Radiri ships its own contract
+for these markets and shows RHEA's reserves on the Markets page for reference.
 
-- **Read-only quoting.** Every quote is `dry: true`. The app never signs, deposits or swaps.
-  The Execute affordance is a link to https://intents.near.org, where the user acts in their
-  own wallet.
-- **Least-privilege writer.** The monitor signs with a function-call access key limited to
-  `record_snapshots`, with an allowance cap. That key cannot rotate the reporter or change
-  ownership. Owner and reporter are separate accounts.
-- **No client-side secrets.** `ONECLICK_JWT`, `NEARAI_API_KEY` and the reporter key are
-  server-only. Nothing secret uses the `NEXT_PUBLIC_` prefix, and `.env.local` is gitignored.
-- **Verifiable inference.** When NEAR AI Cloud signs a reply, the analyst panel exposes the
-  signature lookup so the answer can be checked.
-- **No fabricated data.** A failing source is shown with its reason verbatim, and the
-  contract records `no_liquidity` or `error` rather than a guessed number.
+### Why a reporter-pushed oracle
+
+No on-chain NEAR oracle prices both meme coins and stocks today: Pyth on NEAR has no equity feeds
+(and its BTC price was ~80 days old), the OutLayer Price Oracle holds ~18 crypto assets with no
+stocks. The contract therefore accepts prices from an authorised reporter, timestamps them, rejects
+any single move above the asset's limit, and refuses to borrow or liquidate on a stale price.
+`pnpm oracle:push` reports live 1Click prices with a key that can only call `report_prices`.
+
+## Risk model
+
+Per-asset LTV, liquidation threshold, liquidation bonus, reserve factor, collateral and borrow
+caps, kinked interest model, max price age and max price move. Health factor =
+Σ(collateral x liquidation threshold) / debt; below 1.00 a position can be liquidated (50% close
+factor, bonus paid in collateral). The full formulas are in
+[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md). The TypeScript copy in `src/lib/risk` is checked
+against the Rust contract with shared vectors (`pnpm gen:lending`).
+
+| Category | LTV | Liquidation at | Bonus | Max price age |
+| --- | --- | --- | --- | --- |
+| Meme coins | 25% | 40% | 15% | 300 s |
+| Tokenized stocks | 50% | 65% | 8% | 900 s |
+
+These are conservative testnet starting points, not production values.
+
+## Run it
+
+Requires Node 20+ and pnpm.
+
+```sh
+pnpm install
+pnpm dev            # http://localhost:3000 -> Open the app
+```
+
+No key is needed: swaps quote live, and lending runs the labelled simulation until a contract is
+configured.
+
+## Deploy the lending contract (testnet)
+
+```sh
+OWNER=<you>.testnet scripts/deploy-lending.sh   # tokens, lending contract, assets, liquidity, oracle key
+pnpm oracle:push                                # report live prices (repeat every minute)
+```
+
+Details in [`contracts/lending/README.md`](./contracts/lending/README.md).
 
 ## Architecture
 
+One Next.js 16 app (App Router, route handlers, server-only modules for every secret); no separate
+backend.
+
 ```text
-browser
-  |  /api/stables    1Click token catalog, cached 5 min
-  |  /api/compare    1Click + Rhea in parallel, ranked, opportunities derived
-  |  /api/matrix     32 pairs at one size, gaps across the sweep
-  |  /api/analyst    NEAR AI Cloud chat completions + signature lookup
-  |  /api/snapshots  contract views over NEAR JSON-RPC
-  v
-src/lib/radiri: catalog -> adapters(oneclick, rhea) -> engine -> opportunities -> ai
-  |                |                |                |
-  |                |                |                +-- NEAR AI Cloud (server key)
-  |                |                +-- Rhea Smart Router
-  |                +-- 1Click /v0/quote (dry run)
-  +-- NEAR RPC (read-only)
-
-scripts/monitor.ts -> record_snapshots -> contract/ (reporter function-call key)
+src/app/(app)/   overview, borrow, swap, portfolio, markets, activity, routes
+src/app/api/     assets, pricing, swaps/{quote,status,submit}, lending/{markets,account},
+                 rhea/lending, transactions, plus the route-monitor endpoints
+src/lib/         intents (1Click SDK), lending (near + simulated clients), risk (contract math mirror),
+                 oracle (1Click prices, staleness), rhea, near (RPC, transactions), wallets (NEAR, EVM, Solana)
+src/config/      assets.ts (classification + eligibility), lending-assets.ts (risk parameters)
+contracts/       lending, test-token, snapshot-registry (cargo workspace)
+prisma/          optional PostgreSQL index for swap history
+scripts/         deploy-lending.sh, oracle-push.ts, gen-lending-artifacts.ts, monitor.ts
 ```
 
-| Path | What |
-| --- | --- |
-| `contract/` | Rust registry contract, near-sdk 5.30.1. See [`contract/README.md`](./contract/README.md). |
-| `src/app/api/` | Route handlers listed above, all request-time dynamic. |
-| `src/lib/radiri/` | Catalog cache, adapters, engine, opportunity derivation, analyst, shared types (`types.ts` is the API/UI contract). |
-| `src/components/radiri/` | Dashboard: route form, gap hero, route cards, source table, matrix, opportunities, analyst, snapshot history. |
-| `src/components/wallet-provider.tsx` | NEAR wallet connection via `@hot-labs/near-connect`. |
-| `scripts/monitor.ts` | Quotes a fixed set of pairs, then records them on the contract. |
-
-## Contract
-
-```sh
-cd contract
-cargo test --lib                        # 17 unit tests
-cargo test --test sandbox               # local sandbox: init, access control, ring buffer, event
-cargo near build non-reproducible-wasm  # -> target/near/radiri_contract.wasm (163.9 KB)
-```
-
-Deploying needs a testnet account and signs a transaction, so it is a deliberate manual
-step. Full commands, the interface, storage layout and the reporter function-call key setup
-are in [`contract/README.md`](./contract/README.md).
-
-## Monitor
-
-```sh
-pnpm monitor   # needs NEXT_PUBLIC_CONTRACT_ID, RADIRI_REPORTER_ACCOUNT, RADIRI_REPORTER_PRIVATE_KEY
-```
-
-It quotes the configured pairs, batches `record_snapshots` calls, and prints the transaction
-hash and explorer link for each. With any of those variables missing it exits with the list
-of what is missing and submits nothing.
-
-Current deployment: contract `radiri.testnet`, reporter `radiri-reporter.testnet` signing with
-a function-call key capped at 1 NEAR and restricted to `record_snapshots`.
-
-## Agent access over MCP
-
-`POST /api/mcp` is a JSON-RPC 2.0 MCP endpoint over the same engine the UI uses. Tools:
-`compare_routes`, `liquidity_matrix`, `list_stablecoins`.
-
-```sh
-curl -s https://radiri.vercel.app/api/mcp \
-  -H 'Content-Type: application/json' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"compare_routes",
-       "arguments":{"from":{"symbol":"USDC","chain":"near"},
-                    "to":{"symbol":"USDT","chain":"near"},"amount":10000}}}'
-```
+Every asset carries an explicit, independent classification: **swap** eligible (live in 1Click),
+**collateral** eligible and **borrow** eligible (registered on the lending contract). One never
+implies another. The database is optional and only indexes swaps; balances and debt are always read
+from the contract.
 
 ## Environment
 
-Copy `.env.example` to `.env.local`. Only `NEXT_PUBLIC_CONTRACT_ID` matters for the snapshot
-panel; everything else degrades with a visible reason when unset.
+See [`.env.example`](./.env.example). Everything is optional for local use.
 
-| Variable | Used by | Purpose |
-| --- | --- | --- |
-| `NEXT_PUBLIC_NEAR_NETWORK` | client, server | `testnet` (default) or `mainnet` |
-| `NEXT_PUBLIC_CONTRACT_ID` | client, server | Registry contract account |
-| `NEXT_PUBLIC_NEAR_RPC_URL` | client, server | Optional RPC override, defaults to FastNEAR |
-| `ONECLICK_JWT` | server | Optional 1Click partner JWT, lowers fees and raises limits |
-| `INTENTS_EXPLORER_JWT` | server | Optional Intents Explorer JWT |
-| `NEARAI_API_KEY` | server | Analyst key from https://cloud.near.ai or the NEAR Builders dashboard |
-| `NEARAI_MODEL` | server | Optional model override, defaults to `google/gemini-2.5-flash` |
-| `RADIRI_REPORTER_ACCOUNT` | monitor | Reporter account id |
-| `RADIRI_REPORTER_PRIVATE_KEY` | monitor | Function-call key limited to `record_snapshots` |
-
-Deploying on Vercel: set the `NEXT_PUBLIC_*` values in the project environment before the
-build, since they are inlined at build time. Nothing else in the app is origin-specific.
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_LENDING_CONTRACT_ID` | Lending contract; unset = labelled simulation |
+| `NEXT_PUBLIC_TEST_TOKEN_SUFFIX` | Account the test tokens live under |
+| `RADIRI_ORACLE_ACCOUNT` / `RADIRI_ORACLE_PRIVATE_KEY` | Oracle reporter, function-call key limited to `report_prices` |
+| `NEXT_PUBLIC_REOWN_PROJECT_ID` | Enables WalletConnect; injected EVM wallets work without it |
+| `NEXT_PUBLIC_SOLANA_RPC_URL` | Solana RPC for SPL deposits |
+| `ONECLICK_JWT` | 1Click partner key, removes the 0.2% unauthenticated fee |
+| `DATABASE_URL` | Optional swap-history index |
 
 ## Verification
 
 ```sh
-pnpm exec tsc --noEmit
-pnpm lint
-pnpm build
-cd contract && cargo test --lib && cargo test --test sandbox
+pnpm exec tsc --noEmit && pnpm lint && pnpm test && pnpm build
+cd contracts && cargo test --workspace --lib
 ```
 
-All commands above pass on the committed tree. The contract has 17 unit tests and one
-sandbox integration test that exercises init, reporter-only writes, cheapest-`ok` selection,
-the ring buffer, the event log and owner-only reporter rotation.
+On the committed tree: 102 TypeScript tests, 78 contract tests (52 lending, 9 test token,
+17 snapshot registry), typecheck, lint and production build all pass.
+
+## Hackathon disclosure
+
+Radiri existed before the pivot as a stablecoin route monitor with a snapshot registry contract
+(commits up to `6424ae9`). The lending contract, test token, swap execution flow, tokenized stock
+catalog, risk engine, oracle reporter and the Overview / Borrow / Swap / Portfolio / Markets /
+Activity app were built during the hackathon on branch `ccr-80a3be39-dxl70y`.
 
 ## Built with
 
-`near-sdk` 5.30, `cargo-near`, `near-workspaces`, `near-cli-rs`, `near-api-js`, Next.js 16
-(App Router, Turbopack), React 19, Tailwind CSS 4, shadcn/ui components on `@base-ui/react`,
-`lucide-react`, `sonner`, `next-themes`, `@hot-labs/near-connect` 0.12. The shadcn/ui
-component files and parts of the application code were written with AI assistance and
-reviewed by hand; all libraries are public and listed above.
+near-sdk 5.30, near-contract-standards, cargo-near, Next.js 16, React 19, Tailwind CSS 4,
+shadcn/ui on `@base-ui/react`, `@defuse-protocol/one-click-sdk-typescript`, `@hot-labs/near-connect`,
+wagmi + viem, `@solana/wallet-adapter-react`, Prisma 7, zod, vitest. Parts of the code were written
+with AI assistance and reviewed.
 
 ## License
 
