@@ -1,6 +1,6 @@
 /**
  * Live reference prices for the simulation. `/api/pricing` (swap agent) returns observations for
- * the real assets each test token mirrors (1Click for memes, Pyth Hermes for equities). A missing
+ * the real assets each test token mirrors (1Click: meme coins, and Ondo tokenized stocks for equities). A missing
  * or stale observation leaves the test token without a fresh price, which blocks borrowing exactly
  * as the contract's oracle would.
  */
@@ -58,7 +58,7 @@ export async function fetchReferencePrices(symbols: string[], signal?: AbortSign
   return parsePricingResponse(await res.json());
 }
 
-/** The freshest observation for a reference symbol ("PEPE", "$WIF", "AAPL"). */
+/** The freshest observation for a reference symbol ("PEPE", "$WIF", "AAPLon"). */
 export function matchObservation(observations: PriceObservation[], referenceSymbol: string): PriceObservation | undefined {
   const exact = observations.filter((item) => item.symbol === referenceSymbol);
   const pool = exact.length ? exact : observations.filter((item) => normalizeSymbol(item.symbol) === normalizeSymbol(referenceSymbol));

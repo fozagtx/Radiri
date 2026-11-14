@@ -17,7 +17,7 @@ function observation(symbol: string, priceUsd: number, nowMs: number, ageSeconds
     symbol,
     assetId: symbol,
     priceUsd,
-    source: symbol === "AAPL" || symbol === "TSLA" || symbol === "NVDA" ? "pyth-hermes" : "1click",
+    source: "1click",
     observedAt: new Date(nowMs - ageSeconds * 1000).toISOString(),
     ageSeconds,
     fresh,
@@ -37,10 +37,10 @@ function setup(options: { aaplAge?: number; fail?: boolean } = {}) {
           observation("$WIF", 2, now),
           observation("SHIB", 0.000012, now),
           observation("BRETT", 0.05, now),
-          observation("AAPL", 110, now, options.aaplAge ?? 5),
-          observation("TSLA", 250, now),
+          observation("AAPLon", 110, now, options.aaplAge ?? 5),
+          observation("TSLAon", 250, now),
         ],
-        missing: [{ symbol: "NVDA", reason: "no Pyth feed" }],
+        missing: [{ symbol: "NVDAon", reason: "1Click lists NVDAon but reports no usable price" }],
       };
     },
   });
@@ -62,7 +62,7 @@ describe("SimulatedLendingClient", () => {
     const nvda = assets.find((asset) => asset.config.symbol === "tNVDA")!;
     expect(nvda.price).toBeNull();
     expect(nvda.price_fresh).toBe(false);
-    expect(client.getPriceFeedStatus().missing).toEqual([{ symbol: "NVDA", reason: "no Pyth feed" }]);
+    expect(client.getPriceFeedStatus().missing).toEqual([{ symbol: "NVDAon", reason: "1Click lists NVDAon but reports no usable price" }]);
   });
 
   it("runs journey A: faucet tPEPE, deposit, borrow tAAPL, repay, withdraw", async () => {

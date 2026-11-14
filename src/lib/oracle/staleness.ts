@@ -12,8 +12,6 @@ import type { PriceSource } from "@/types/protocol";
 export const DEFAULT_MAX_AGE_SEC: Record<PriceSource, number> = {
   // 1Click refreshes /v0/tokens prices about once a minute.
   "1click": 300,
-  // Pyth equity feeds stop during market close; 15 minutes matches the lending stock assets.
-  "pyth-hermes": 900,
   "lending-oracle": 300,
 };
 

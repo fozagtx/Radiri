@@ -8,15 +8,16 @@ import type { AssetConfig } from "@/types/protocol";
  * When a contract is configured, its on-chain registry is authoritative and this table is ignored.
  *
  * Every token here is a TESTNET TEST TOKEN with no value. Each one's oracle price mirrors a real
- * reference asset (`referenceSymbol`): 1Click /v0/tokens for meme coins, Pyth Hermes for equities.
+ * reference asset (`referenceSymbol`) priced by 1Click `/v0/tokens`: the meme coin itself, or for
+ * stocks the Ondo Global Markets tokenized stock (AAPLon, TSLAon, NVDAon on BNB Chain).
  *
  * Risk parameters are conservative testnet starting points, not production values. Rationale:
  *   - Meme coins: daily moves of 20-40% are common, so LTV 25% / liquidation at 40% leaves a
  *     ~37% price drop between the borrow limit and liquidation, and a 15% bonus keeps liquidators
  *     paid through thin liquidity. Max price age 300 s (the reporter pushes every 60 s).
  *   - Tokenized stocks: lower volatility but market-hours pricing, so LTV 50% / liquidation at
- *     65% and an 8% bonus. Max price age 900 s: outside market hours Pyth equity prices stop
- *     updating, which correctly blocks new borrows and liquidations against stale stock prices.
+ *     65% and an 8% bonus. Max price age 900 s: if the reference price stops updating (for
+ *     example outside market hours), new borrows and liquidations against stocks are blocked.
  * Production values require a volatility and liquidity study per asset.
  */
 
@@ -24,8 +25,8 @@ export interface LendingAssetSpec {
   config: AssetConfig;
   /** Real asset whose price the oracle mirrors. */
   referenceSymbol: string;
-  /** Where the reference price comes from. */
-  referenceSource: "1click" | "pyth-hermes";
+  /** Where the reference price comes from: the live 1Click `/v0/tokens` catalog. */
+  referenceSource: "1click";
   /** Human-readable name shown in the UI. */
   name: string;
 }
@@ -69,7 +70,7 @@ function stock(symbol: string, reference: string, collateralCapWhole: bigint, na
   return {
     name,
     referenceSymbol: reference,
-    referenceSource: "pyth-hermes",
+    referenceSource: "1click",
     config: {
       token_id: `${symbol.toLowerCase()}.${TEST_TOKEN_SUFFIX}`,
       symbol,
@@ -97,9 +98,9 @@ export const LENDING_ASSETS: LendingAssetSpec[] = [
   meme("tWIF", "$WIF", 6, BigInt(20_000_000), "Radiri Test WIF (no value)"),
   meme("tSHIB", "SHIB", 18, BigInt(500_000_000_000), "Radiri Test SHIB (no value)"),
   meme("tBRETT", "BRETT", 18, BigInt(500_000_000), "Radiri Test BRETT (no value)"),
-  stock("tAAPL", "AAPL", BigInt(10_000), "Radiri Test Apple stock (no value)"),
-  stock("tTSLA", "TSLA", BigInt(10_000), "Radiri Test Tesla stock (no value)"),
-  stock("tNVDA", "NVDA", BigInt(10_000), "Radiri Test NVIDIA stock (no value)"),
+  stock("tAAPL", "AAPLon", BigInt(10_000), "Radiri Test Apple stock (no value)"),
+  stock("tTSLA", "TSLAon", BigInt(10_000), "Radiri Test Tesla stock (no value)"),
+  stock("tNVDA", "NVDAon", BigInt(10_000), "Radiri Test NVIDIA stock (no value)"),
 ];
 
 export function lendingAssetByTokenId(tokenId: string): LendingAssetSpec | undefined {

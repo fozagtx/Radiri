@@ -186,13 +186,13 @@ model TransactionEvent {
   @@index([swapId, createdAt])
 }
 
-/// A reference price as reported by its source (1Click, Pyth Hermes, the lending oracle).
+/// A reference price as reported by its source (1Click or the lending oracle).
 model OracleObservation {
   id         String   @id @default(cuid())
   assetId    String?
   asset      Asset?   @relation(fields: [assetId], references: [id])
   symbol     String
-  source     String // "1click" | "pyth-hermes" | "lending-oracle"
+  source     String // "1click" | "lending-oracle"
   priceUsd   String // exact decimal string as reported
   priceWad   Decimal? @db.Decimal(78, 0)
   observedAt DateTime

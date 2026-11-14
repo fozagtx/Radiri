@@ -4,7 +4,7 @@ import { NotchNavbar } from "@/components/ui/notch-navbar";
 import { LiveQuote } from "@/components/landing/live-quote";
 import { RadiriMark } from "@/components/landing/mark";
 import { RevealObserver } from "@/components/landing/reveal";
-import { CloudMark, IntentsMark, RegistryMark, RheaMark, RpcMark } from "@/components/landing/venue-marks";
+import { IntentsMark, RegistryMark, RheaMark, RpcMark } from "@/components/landing/venue-marks";
 
 export default function LandingPage() {
   return (
@@ -15,18 +15,19 @@ export default function LandingPage() {
       <AuroraHero className="lp-hero" id="top">
         <div className="lp-hero-inner">
           <div className="lp-hero-copy">
-            <p className="lp-eyebrow lp-rise">Settlement on NEAR, liquidity across chains</p>
+            <p className="lp-eyebrow lp-rise">Meme coins and tokenized stocks, settled on NEAR</p>
             <h1 className="lp-rise d1">
-              Every stablecoin route,
+              Borrow stocks against
               <br />
-              in one place.
+              your meme coins.
             </h1>
             <p className="lp-sub lp-rise d2">
-              Quotes from NEAR Intents and Rhea, priced in basis points for your size.
+              Keep your PEPE and borrow tokenized Apple, or lock tokenized stocks and borrow meme coins.
+              Swap between them across chains through NEAR Intents.
             </p>
             <div className="lp-actions lp-rise d3">
-              <Link className="lp-btn lp-btn--ink" href="/dashboard">
-                Quote your size
+              <Link className="lp-btn lp-btn--ink" href="/overview">
+                Open the app
               </Link>
               <a className="lp-btn lp-btn--outline" href="#how">
                 See how it works
@@ -45,13 +46,10 @@ export default function LandingPage() {
             <IntentsMark /> NEAR Intents 1Click
           </span>
           <span>
-            <RheaMark /> Rhea Smart Router
+            <RegistryMark /> Radiri lending contract
           </span>
           <span>
-            <CloudMark /> NEAR AI Cloud
-          </span>
-          <span>
-            <RegistryMark /> Radiri registry
+            <RheaMark /> Rhea Lending (reference)
           </span>
           <span>
             <RpcMark /> FastNEAR RPC
@@ -61,11 +59,10 @@ export default function LandingPage() {
 
       <section className="lp-wash" id="how">
         <div className="lp-inner lp-reveal">
-          <h2>How the aggregator scores a route</h2>
+          <h2>Three things you can do</h2>
           <p className="lp-lead">
-            Both sources are queried in parallel for the size you enter. The engine converts each
-            quote into the same unit, basis points against a 1:1 peg, then ranks them and records
-            the round.
+            Collateral, debt and prices live in one NEAR contract. Swaps go through NEAR Intents,
+            which routes your meme coin on one chain into a tokenized stock on another.
           </p>
 
           <div className="lp-bento">
@@ -88,92 +85,89 @@ export default function LandingPage() {
                 </div>
 
                 <div className="lp-node" style={{ left: "4%", top: "12%" }}>
+                  <span className="orb">PEPE</span>
+                  <em>meme</em>
+                </div>
+                <div className="lp-node" style={{ right: "4%", top: "12%" }}>
+                  <span className="orb">AAPL</span>
+                  <em>stock</em>
+                </div>
+                <div className="lp-node" style={{ left: "4%", bottom: "12%" }}>
                   <span className="orb">1Clk</span>
                   <em>Intents</em>
                 </div>
-                <div className="lp-node" style={{ right: "4%", top: "12%" }}>
-                  <span className="orb">bps</span>
-                  <em>normalize</em>
-                </div>
-                <div className="lp-node" style={{ left: "4%", bottom: "12%" }}>
-                  <span className="orb">Rhea</span>
-                  <em>pools</em>
-                </div>
                 <div className="lp-node" style={{ right: "4%", bottom: "12%" }}>
                   <span className="orb">NEAR</span>
-                  <em>registry</em>
+                  <em>lending</em>
                 </div>
               </div>
             </div>
 
             <div className="lp-cell">
-              <div className="big">2 sources</div>
-              <p className="small">Intents solvers and NEAR AMM pools quoted on every request.</p>
+              <div className="big">Meme → stock</div>
+              <p className="small">Deposit meme coins as collateral and borrow tokenized stocks.</p>
             </div>
             <div className="lp-cell">
-              <div className="big">1 unit</div>
-              <p className="small">Everything expressed in basis points, so routes are comparable.</p>
+              <div className="big">Stock → meme</div>
+              <p className="small">Deposit tokenized stocks as collateral and borrow meme coins.</p>
             </div>
             <div className="lp-cell">
-              <div className="big">32 pairs</div>
-              <p className="small">One matrix sweep at your size, gaps listed across all of them.</p>
+              <div className="big">Cross-chain</div>
+              <p className="small">PEPE on Ethereum to tokenized Apple on BNB Chain, in one swap.</p>
             </div>
             <div className="lp-cell">
-              <div className="big">Size aware</div>
-              <p className="small">A route that fills 10,000 may have nothing at 100,000.</p>
+              <div className="big">Per-asset risk</div>
+              <p className="small">Each asset has its own LTV, liquidation threshold and bonus.</p>
             </div>
             <div className="lp-cell">
-              <div className="big">Dry runs</div>
-              <p className="small">Quotes only. No deposit, no signature, no funds moved.</p>
+              <div className="big">Fresh prices</div>
+              <p className="small">A stale price blocks borrowing and liquidation, never authorises them.</p>
             </div>
             <div className="lp-cell">
-              <div className="big">Access control</div>
-              <p className="small">
-                The monitor writes with a key limited to one method. Owner and reporter are
-                different accounts.
-              </p>
+              <div className="big">Health factor</div>
+              <p className="small">Positions below 1.00 can be liquidated, with a bonus for the liquidator.</p>
             </div>
             <div className="lp-cell">
               <div className="big">On chain</div>
-              <p className="small">Each round is written to a NEAR contract by a reporter key.</p>
+              <p className="small">Collateral and debt are read from the contract, never from a database.</p>
             </div>
             <div className="lp-cell">
-              <div className="big">Analyst</div>
-              <p className="small">NEAR AI Cloud reads the quote in a TEE and explains the spread.</p>
+              <div className="big">Your keys</div>
+              <p className="small">Every deposit, borrow and swap is signed in your own wallet.</p>
             </div>
           </div>
         </div>
       </section>
 
       <section className="lp-inner lp-reveal" id="engine">
-        <h2>The same engine behind every request</h2>
+        <h2>How a borrow works</h2>
         <p className="lp-lead">
-          The dashboard, the matrix sweep and the monitor all call one comparison engine. Nothing
-          is cached into a screenshot, and no number is written by hand.
+          The contract checks every borrow and withdrawal against fresh prices, the asset&apos;s risk
+          parameters and the pool&apos;s liquidity before any token moves.
         </p>
         <div className="lp-feats">
           <div className="lp-feat">
             <span className="step">01</span>
-            <h3>Parallel quotes</h3>
+            <h3>Deposit collateral</h3>
             <p>
-              Each source is asked at the same moment for the same size, so a slow or failing
-              venue never hides the other one.
+              Send meme coins or tokenized stocks to the lending contract. They stay locked and
+              keep counting as yours until the debt is repaid.
             </p>
           </div>
           <div className="lp-feat">
             <span className="step">02</span>
-            <h3>Findings, not vibes</h3>
+            <h3>Borrow against it</h3>
             <p>
-              Liquidity gaps, expensive routes, cross-chain spreads and source divergence are
-              derived from the quotes themselves, never assumed.
+              Your borrowing power is the collateral value times its LTV. Pick a stock or a meme
+              coin and borrow up to that limit, if the pool has the liquidity.
             </p>
           </div>
           <div className="lp-feat">
             <span className="step">03</span>
-            <h3>History you can check</h3>
+            <h3>Repay, then withdraw</h3>
             <p>
-              The monitor records each round on a NEAR registry contract with a reporter key that
-              can only call one method.
+              Interest accrues on the debt. Repay any time; collateral comes back once the
+              remaining debt allows it.
             </p>
           </div>
         </div>
@@ -184,38 +178,38 @@ export default function LandingPage() {
         <div className="lp-faq-item">
           <strong>What is Radiri?</strong>
           <span>
-            An aggregator for stablecoin liquidity on NEAR. It quotes NEAR Intents 1Click and the
-            Rhea Smart Router for the same pair and size, then shows which one fills and at what
-            cost.
+            A NEAR app that connects meme coins and tokenized stocks: borrow stocks against meme
+            coins, borrow meme coins against stocks, and swap one for the other across chains.
           </span>
         </div>
         <div className="lp-faq-item">
-          <strong>Why do the two sources disagree?</strong>
+          <strong>Which tokenized stocks?</strong>
           <span>
-            They are different kinds of liquidity. 1Click routes through cross-chain solvers, Rhea
-            routes through NEAR AMM pools. Above a certain size one runs dry before the other.
+            Swaps use the Ondo Global Markets stocks NEAR Intents lists, such as AAPLon, TSLAon and
+            NVDAon on BNB Chain. Availability depends on your region and on NEAR Intents.
           </span>
         </div>
         <div className="lp-faq-item">
-          <strong>Does Radiri execute trades?</strong>
+          <strong>Is lending live with real assets?</strong>
           <span>
-            No. Every quote is a dry run and the app never signs. Execution is a link out to
-            intents.near.org, where you act in your own wallet.
+            Not yet. The lending contract runs on NEAR testnet with test tokens that have no value;
+            their prices mirror the real PEPE, WIF, Apple, Tesla and NVIDIA prices. Swaps are real
+            and run on mainnet.
           </span>
         </div>
         <div className="lp-faq-item">
-          <strong>Is the registry contract deployed?</strong>
+          <strong>Who holds my funds?</strong>
           <span>
-            Built and tested, deployment to testnet is the remaining step. Until it is live the
-            snapshot panel reports that instead of showing rows.
+            You sign every transaction in your own wallet. Collateral sits in the lending contract,
+            and swaps settle through NEAR Intents to the address you choose.
           </span>
         </div>
       </section>
 
       <footer className="lp-foot">
-        <span>Radiri · Cross-chain stablecoin liquidity aggregator · NEAR HACKATHON 2026</span>
+        <span>Radiri · Borrow and swap meme coins and tokenized stocks · NEAR HACKATHON 2026</span>
         <span>
-          <Link href="/dashboard">Dashboard</Link> ·{" "}
+          <Link href="/overview">App</Link> ·{" "}
           <a href="https://github.com/fozagtx/Radiri" target="_blank" rel="noreferrer">
             GitHub
           </a>

@@ -1,7 +1,7 @@
 /**
  * Radiri oracle reporter: reads the lending contract's assets (or the LENDING_ASSETS table), fetches
- * each asset's reference price through src/lib/oracle (1Click for meme coins, Pyth Hermes or the
- * labelled 1Click Ondo fallback for equities), converts it to `price_wad` (USD per whole token x 1e18,
+ * each asset's reference price through src/lib/oracle (1Click /v0/tokens: meme coins by symbol, Ondo
+ * tokenized stocks such as AAPLon for equities), converts it to `price_wad` (USD per whole token x 1e18,
  * exact decimal-string math) and calls `report_prices({ prices: [{ token_id, price_wad }] })`.
  *
  * Usage:
@@ -10,7 +10,7 @@
  *
  * Env (.env.local or .env): RADIRI_ORACLE_ACCOUNT, RADIRI_ORACLE_PRIVATE_KEY (a function-call key limited to
  * report_prices on the lending contract), NEXT_PUBLIC_LENDING_CONTRACT_ID, optional NEXT_PUBLIC_NEAR_NETWORK
- * (default testnet), NEXT_PUBLIC_NEAR_RPC_URL, PYTH_HERMES_API_KEY.
+ * (default testnet), NEXT_PUBLIC_NEAR_RPC_URL.
  *
  * Stale or missing references are skipped with a printed reason; a price that moves more than the
  * asset's max_price_change_bps against a fresh on-chain price is skipped too (the contract would reject
@@ -135,10 +135,9 @@ async function main(): Promise<void> {
   }
 
   const references = [...new Set(targets.map((target) => target.referenceSymbol).filter((symbol): symbol is string => Boolean(symbol)))];
-  const { quotes, missing: missingPrices, notes } = await collectPrices(references);
+  const { quotes, missing: missingPrices } = await collectPrices(references);
   const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol.toUpperCase(), quote]));
   const missingBySymbol = new Map(missingPrices.map((item) => [item.symbol.toUpperCase(), item.reason]));
-  for (const note of notes) console.log(`  note: ${note}`);
 
   const prices: PriceReport[] = [];
   for (const target of targets) {

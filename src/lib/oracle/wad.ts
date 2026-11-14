@@ -41,18 +41,6 @@ export function numberToDecimalString(value: number): string {
   return normaliseDecimal(decimal);
 }
 
-/** Pyth price (integer string `price`, exponent `expo`) -> exact decimal string. Negative prices are rejected. */
-export function pythToDecimalString(price: string, expo: number): string {
-  if (!/^-?\d+$/.test(price)) throw new PriceFormatError(`Pyth price "${price}" is not an integer`);
-  if (!Number.isInteger(expo)) throw new PriceFormatError(`Pyth expo ${expo} is not an integer`);
-  if (price.startsWith("-")) throw new PriceFormatError(`Pyth price ${price} is negative`);
-  const digits = BigInt(price).toString();
-  if (expo >= 0) return normaliseDecimal(`${digits}${"0".repeat(expo)}`);
-  const places = -expo;
-  const padded = digits.padStart(places + 1, "0");
-  return normaliseDecimal(`${padded.slice(0, padded.length - places)}.${padded.slice(padded.length - places)}`);
-}
-
 /**
  * Exact decimal USD price -> price_wad string. Digits beyond 18 decimal places are truncated
  * (rounded down, never up). Rejects zero (the contract treats 0 as "no price") and u128 overflow.

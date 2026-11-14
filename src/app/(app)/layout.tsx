@@ -1,11 +1,13 @@
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { MobileWalletBar } from "@/components/dashboard/mobile-bar";
 import { MOBILE_LINKS } from "@/components/dashboard/nav";
+import { LendingProvider } from "@/components/shared/lending-provider";
 import { NotchNavbar } from "@/components/ui/notch-navbar";
 
 /** App shell: sidebar on desktop, notch navbar + wallet strip on phones. Pages render only content. */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
+    <LendingProvider>
     <div className="flex min-h-screen">
       <DashboardSidebar />
 
@@ -26,5 +28,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </footer>
       </div>
     </div>
+    </LendingProvider>
   );
 }

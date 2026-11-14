@@ -179,11 +179,11 @@ export interface LendingClient {
 /* Pricing (src/lib/oracle)                                            */
 /* ------------------------------------------------------------------ */
 
-export type PriceSource = "1click" | "pyth-hermes" | "lending-oracle";
+export type PriceSource = "1click" | "lending-oracle";
 
 export interface PriceObservation {
   symbol: string;
-  /** Asset id the price belongs to (1Click id, NEAR token id or Pyth feed id). */
+  /** Asset id the price belongs to (1Click asset id or NEAR token id). */
   assetId: string;
   priceUsd: number;
   source: PriceSource;

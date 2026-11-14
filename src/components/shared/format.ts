@@ -53,7 +53,7 @@ export function assetName(tokenId: string): string | undefined {
 
 export function referenceOf(tokenId: string): { symbol: string; source: string } | undefined {
   const spec = lendingAssetByTokenId(tokenId);
-  return spec ? { symbol: spec.referenceSymbol, source: spec.referenceSource === "1click" ? "1Click" : "Pyth Hermes" } : undefined;
+  return spec ? { symbol: spec.referenceSymbol, source: "1Click" } : undefined;
 }
 
 export function isTestToken(asset: AssetView): boolean {
